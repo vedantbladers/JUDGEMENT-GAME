@@ -1,0 +1,423 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: luxury --default;
+}
+
+/* ============================================ */
+/* Hallmark & UI/UX Pro Max Tokens              */
+/* ============================================ */
+:root {
+  --color-bg-base: oklch(0.14 0.02 260);
+  --color-surface-card: oklch(0.18 0.03 260 / 0.7);
+  --color-gold-accent: oklch(0.85 0.15 85);
+  --color-felt-green: oklch(0.32 0.12 145);
+  --font-display: var(--font-outfit), sans-serif;
+}
+
+/* Structural & Mobile Safety Constraints */
+html, body {
+  overflow-x: clip;
+  max-width: 100vw;
+  font-family: var(--font-display);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6,
+.font-heading {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+  font-style: normal;
+}
+
+/* ============================================ */
+/* Custom Scrollbar                             */
+/* ============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--p) / 0.3);
+  border-radius: 10px;
+}
+
+/* ============================================ */
+/* Glassmorphism Utilities                      */
+/* ============================================ */
+.glass-card {
+  background: rgba(18, 26, 23, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-card-hover {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.glass-card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 18px 45px rgba(245, 215, 130, 0.12),
+    0 8px 24px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: rgba(245, 215, 130, 0.3);
+}
+
+/* ============================================ */
+/* Gradient Text                                */
+/* ============================================ */
+.text-gradient {
+  background: linear-gradient(135deg, #f5d782 0%, #d4a847 50%, #f5d782 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fff2c6 0%, #f5d782 40%, #c9932b 80%, #fff2c6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+  padding-bottom: 0.18em;
+  line-height: 1.15;
+}
+
+/* ============================================ */
+/* Animated Glow Border                         */
+/* ============================================ */
+.glow-border {
+  position: relative;
+  overflow: hidden;
+}
+.glow-border::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    hsl(var(--p)),
+    hsl(var(--s)),
+    hsl(var(--a)),
+    hsl(var(--p))
+  );
+  animation: borderSpin 4s linear infinite;
+  z-index: -1;
+}
+.glow-border::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: hsl(var(--b2));
+  z-index: -1;
+}
+@keyframes borderSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================ */
+/* Card Hover & Glow Animations                 */
+/* ============================================ */
+@keyframes cardGlow {
+  0%, 100% { box-shadow: 0 0 5px hsl(var(--p) / 0.3); }
+  50% { box-shadow: 0 0 20px hsl(var(--p) / 0.6); }
+}
+
+.card-glow:hover {
+  animation: cardGlow 1.5s ease-in-out infinite;
+}
+
+/* ============================================ */
+/* Pulse Animation for Turn Indicators          */
+/* ============================================ */
+@keyframes turnPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--p) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px hsl(var(--p) / 0);
+  }
+}
+.turn-pulse {
+  animation: turnPulse 2s ease-in-out infinite;
+}
+
+/* ============================================ */
+/* Shimmer Effect                               */
+/* ============================================ */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 33%,
+    hsl(var(--bc) / 0.05) 50%,
+    transparent 66%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* ============================================ */
+/* Smooth Page Transitions                      */
+/* ============================================ */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================ */
+/* ============================================ */
+/* Floating Particles Background                */
+/* ============================================ */
+.particles-bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  /* Add a subtle lighter gradient to the background to make it less pitch black */
+  background: radial-gradient(circle at 50% 0%, rgba(30, 30, 45, 0.4) 0%, transparent 80%);
+}
+.particle {
+  position: absolute;
+  opacity: 0.15;
+  animation: floatParticle linear infinite;
+  font-size: 2rem;
+  user-select: none;
+}
+@keyframes floatParticle {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.15;
+  }
+  90% {
+    opacity: 0.15;
+  }
+  100% {
+    transform: translateY(-10vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* ============================================ */
+/* Game Table Felt Texture                      */
+/* ============================================ */
+.game-table {
+  background:
+    radial-gradient(
+      ellipse at center,
+      hsl(var(--b2) / 0.8) 0%,
+      hsl(var(--b3) / 0.95) 70%
+    );
+  border: 2px solid hsl(var(--bc) / 0.08);
+  box-shadow:
+    inset 0 2px 20px hsl(var(--b3) / 0.5),
+    0 4px 30px hsl(var(--b3) / 0.3);
+}
+
+/* ============================================ */
+/* Playing Card Styles                          */
+/* ============================================ */
+.playing-card {
+  width: 72px;
+  height: 104px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy sheen sweep on hover */
+.playing-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 60%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.playing-card:hover::after {
+  transform: translateX(100%);
+}
+
+.playing-card:hover:not(.disabled) {
+  transform: translateY(-14px) scale(1.06);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.3),
+    0 0 15px hsl(var(--p) / 0.2);
+}
+
+.playing-card.red {
+  color: #dc2626;
+}
+
+.playing-card.black {
+  color: #1a1a2e;
+}
+
+.playing-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.playing-card.disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Trump card golden border */
+.playing-card.is-trump {
+  border-color: #d4a847 !important;
+  box-shadow: 0 0 8px rgba(212, 168, 71, 0.3);
+}
+
+/* ============================================ */
+/* Hand Fan Layout                              */
+/* ============================================ */
+.hand-fan {
+  display: flex;
+  justify-content: center;
+  perspective: 800px;
+}
+
+.hand-fan .playing-card {
+  margin: 0 -8px;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), margin 0.25s ease;
+}
+
+.hand-fan .playing-card:hover {
+  margin: 0 6px;
+  z-index: 10;
+}
+
+/* ============================================ */
+/* Confetti Burst Animation                     */
+/* ============================================ */
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+.confetti-piece {
+  position: fixed;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  animation: confettiFall linear forwards;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ============================================ */
+/* Score Count-up Animation                     */
+/* ============================================ */
+@keyframes countPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); color: hsl(var(--su)); }
+  100% { transform: scale(1); }
+}
+.score-pop {
+  animation: countPulse 0.5s ease;
+}
+
+/* ============================================ */
+/* Input Focus Glow                             */
+/* ============================================ */
+.input-glow:focus-within {
+  box-shadow: 0 0 0 3px hsl(var(--p) / 0.2);
+  border-color: hsl(var(--p) / 0.5);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* ============================================ */
+/* Error Shake Animation                        */
+/* ============================================ */
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.error-shake {
+  animation: errorShake 0.5s ease;
+}
+
+/* ============================================ */
+/* Badge Bounce (YOUR TURN indicator)           */
+/* ============================================ */
+@keyframes badgeBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.badge-bounce {
+  animation: badgeBounce 1s ease-in-out infinite;
+}
+
+/* ============================================ */
+/* Authentic Casino Table Style                 */
+/* ============================================ */
+.casino-table {
+  background: radial-gradient(circle at center, #1b5e20 0%, #0a3311 100%);
+  border: 12px solid #3e2723;
+  box-shadow: 
+    inset 0 0 40px rgba(0,0,0,0.6),
+    0 20px 40px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+.casino-table::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z' fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
