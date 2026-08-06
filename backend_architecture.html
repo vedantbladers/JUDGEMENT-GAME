@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Architecture Flow</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .mermaid {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 1000px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Judgement Backend: Chronological Flow</h1>
+
+    <!-- Mermaid parses this text into a beautiful SVG diagram automatically -->
+    <div class="mermaid">
+        sequenceDiagram
+            autonumber
+            actor User as The Player
+            
+            box rgba(26, 188, 156, 0.1) Phase 1: Authentication (Stateless)
+            participant Auth as Auth API
+            participant DB as PostgreSQL
+            end
+            
+            box rgba(52, 152, 219, 0.1) Phase 2: Matchmaking (Stateless)
+            participant Lobby as Lobby API
+            end
+            
+            box rgba(155, 89, 182, 0.1) Phase 3 & 4: Real-Time Gameplay
+            participant WS as WebSocket Upgrader
+            participant Hub as Central Hub
+            participant Game as Game Engine
+            participant Sanitizer as Anti-Cheat Sanitizer
+            end
+
+            User->>Auth: POST /register & /login (Sends Credentials)
+            Auth->>DB: Saves User Data
+            DB-->>Auth: Success
+            Auth-->>User: Returns JWT Token
+
+            User->>Lobby: POST /create & /join (Bearer JWT)
+            Lobby->>DB: Updates Lobby State
+            DB-->>Lobby: Success
+            Lobby-->>User: Returns Lobby Code
+
+            User->>WS: Connects to /ws
+            note over WS: Upgrades HTTP to TCP socket.<br/>Spawns readPump() & writePump() threads.
+
+            User->>Hub: readPump pushes JSON: PLAY_CARD
+            Hub->>Game: Mutates Game State sequentially
+            Game-->>Hub: Returns New State
+            
+            Hub->>Sanitizer: Passes Raw State
+            note over Sanitizer: Strips out opponents' hidden cards!
+            Sanitizer-->>User: writePump Broadcasts Filtered JSON
+    </div>
+
+    <!-- Import Mermaid JS -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'default',
+            sequence: {
+                showSequenceNumbers: true,
+                actorMargin: 50,
+                messageMargin: 40
+            }
+        });
+    </script>
+</body>
+</html>
