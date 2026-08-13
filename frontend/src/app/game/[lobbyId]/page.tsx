@@ -42,6 +42,7 @@ export default function GamePage() {
   useEffect(() => {
     const storedId = localStorage.getItem("user_id");
     if (storedId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUserId(Number(storedId));
       setIsReady(true);
     } else {
@@ -83,6 +84,7 @@ export default function GamePage() {
 
   useEffect(() => {
     if (gameState?.phase === "finished") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCardsPerPlayer((prev) => Math.max(1, prev - 1));
     }
   }, [gameState?.phase]);
@@ -132,6 +134,7 @@ export default function GamePage() {
 
   useEffect(() => {
     if (bidInput > maxBid) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBidInput(maxBid);
     }
   }, [maxBid, bidInput]);
@@ -434,7 +437,7 @@ export default function GamePage() {
 
             {/* My Hand */}
             <div className="hand-fan justify-center mt-4">
-              {myHand.map((card, i) => (
+              {myHand.map((card) => (
                 <PlayingCard
                   key={`${card.suit}-${card.rank}`}
                   card={card}

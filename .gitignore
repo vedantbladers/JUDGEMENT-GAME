@@ -25,7 +25,6 @@ dist/
 *.test
 *.out
 backend/api
-api
 
 # Operating System & IDE Files
 .DS_Store

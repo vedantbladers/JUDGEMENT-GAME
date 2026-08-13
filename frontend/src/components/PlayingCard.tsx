@@ -47,10 +47,10 @@ export default function PlayingCard({
       whileTap={!disabled && onClick ? { scale: 0.94 } : {}}
       onClick={disabled ? undefined : onClick}
       className={cn(
-        "playing-card bg-gradient-to-b from-slate-50 to-slate-100 border-2 shadow-xl select-none relative overflow-hidden",
+        "playing-card bg-linear-to-b from-slate-50 to-slate-100 border-2 shadow-xl select-none relative overflow-hidden",
         color === "red" ? "text-red-600 border-red-200/50" : "text-slate-900 border-slate-300/50",
         isTrump && "is-trump border-amber-400/80 shadow-amber-500/20 shadow-lg",
-        disabled && onClick ? "opacity-50 cursor-not-allowed filter grayscale-[30%]" : "",
+        disabled && onClick ? "opacity-50 cursor-not-allowed grayscale-[30%]" : "",
         !disabled && onClick
           ? "cursor-pointer hover:shadow-2xl hover:shadow-primary/30 hover:border-primary/50"
           : "",

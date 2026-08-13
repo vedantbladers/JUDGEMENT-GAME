@@ -4,7 +4,7 @@ export default function ParticleBackground() {
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
       {/* Deep Obsidian Dark Mesh Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#090d10] via-[#07120e] to-[#05080b]" />
+      <div className="absolute inset-0 bg-linear-to-b from-[#090d10] via-[#07120e] to-[#05080b]" />
 
       {/* Subtle Radial Ambient Lighting */}
       <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-emerald-500/8 blur-[140px] rounded-full" />

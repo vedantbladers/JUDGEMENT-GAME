@@ -20,6 +20,7 @@ export default function LobbyPage() {
   const [username, setUsername] = useState("Player");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUsername(localStorage.getItem("username") || "Player");
   }, []);
 

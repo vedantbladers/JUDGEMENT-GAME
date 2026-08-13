@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
-import { PlayCircle, Info, FileText, User, LogOut, Spade, Crown, Shield, Flame } from "lucide-react";
+import { PlayCircle, Info, FileText, User, LogOut, Spade } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 
 const containerVariants: Variants = {
@@ -40,6 +40,7 @@ export default function DashboardPage() {
     }
     const storedName = localStorage.getItem("username");
     if (storedName) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUsername(storedName);
     }
     setIsChecking(false);
@@ -67,7 +68,7 @@ export default function DashboardPage() {
       {/* Top Bar Navigation */}
       <nav className="w-full px-6 py-4 flex justify-between items-center relative z-10 border-b border-white/5 backdrop-blur-md bg-black/20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-emerald-500/20 flex items-center justify-center border border-amber-400/30 shadow-lg shadow-amber-500/10">
+          <div className="w-10 h-10 rounded-xl bg-linear-to-br from-amber-400/20 to-emerald-500/20 flex items-center justify-center border border-amber-400/30 shadow-lg shadow-amber-500/10">
             <User className="w-5 h-5 text-amber-300" />
           </div>
           <div>
@@ -115,7 +116,7 @@ export default function DashboardPage() {
           <motion.div variants={itemVariants} className="group h-full">
             <Link href="/lobby" className="block h-full">
               <div className="glass-card h-full p-6 rounded-3xl border border-amber-400/30 hover:border-amber-400/80 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20 hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden text-left">
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-linear-to-br from-amber-400/10 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-amber-400/15 flex items-center justify-center border border-amber-400/30 shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-lg shadow-amber-500/10">
@@ -137,7 +138,7 @@ export default function DashboardPage() {
           <motion.div variants={itemVariants} className="group h-full">
             <Link href="/rules" className="block h-full">
               <div className="glass-card h-full p-6 rounded-3xl border border-emerald-400/30 hover:border-emerald-400/80 transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-500/20 hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden text-left">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-linear-to-br from-emerald-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-emerald-400/15 flex items-center justify-center border border-emerald-400/30 shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-lg shadow-emerald-500/10">
@@ -159,7 +160,7 @@ export default function DashboardPage() {
           <motion.div variants={itemVariants} className="group h-full">
             <Link href="/about" className="block h-full">
               <div className="glass-card h-full p-6 rounded-3xl border border-cyan-400/30 hover:border-cyan-400/80 transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/20 hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden text-left">
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-linear-to-br from-cyan-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-cyan-400/15 flex items-center justify-center border border-cyan-400/30 shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-lg shadow-cyan-500/10">
