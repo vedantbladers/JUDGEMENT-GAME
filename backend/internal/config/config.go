@@ -9,9 +9,10 @@ import (
 
 // AppConfig holds all environment variables
 type AppConfig struct {
-	Port      string
-	DBUrl     string
-	JwtSecret string
+	Port        string
+	DBUrl       string
+	JwtSecret   string
+	FrontendUrl string
 }
 
 // LoadConfig reads configuration from file or environment variables.
@@ -35,9 +36,15 @@ func LoadConfig() *AppConfig {
 		log.Fatal("JWT_SECRET environment variable is required")
 	}
 
+	frontendUrl := os.Getenv("FRONTEND_URL")
+	if frontendUrl == "" {
+		frontendUrl = "http://localhost:3000" // Default for local dev
+	}
+
 	return &AppConfig{
-		Port:      port,
-		DBUrl:     dbUrl,
-		JwtSecret: jwtSecret,
+		Port:        port,
+		DBUrl:       dbUrl,
+		JwtSecret:   jwtSecret,
+		FrontendUrl: frontendUrl,
 	}
 }
