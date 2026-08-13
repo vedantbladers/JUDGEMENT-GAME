@@ -150,9 +150,15 @@ func (h *Hub) handleAction(action Action) {
 			return
 		}
 
-		// Initialize game
-		g := game.NewGame(lobbyID, playerIDs)
-		g.HostID = h.LobbyHosts[lobbyID]
+		// Use existing game state if it exists, otherwise create new
+		g, ok := h.Games[lobbyID]
+		if !ok {
+			g = game.NewGame(lobbyID, playerIDs)
+			g.HostID = h.LobbyHosts[lobbyID]
+		} else {
+			// Ensure player list is up to date for the new round
+			g.Players = playerIDs
+		}
 
 		// Populate player names from connected clients
 		for c := range clients {
