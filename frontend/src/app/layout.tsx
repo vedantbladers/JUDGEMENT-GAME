@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="luxury">
+    <html lang="en" data-theme="luxury" style={{ fontSize: "125%" }}>
       <body
         className={`${outfit.variable} ${inter.variable} min-h-screen bg-base-100 font-sans antialiased`}
         style={{ fontFamily: "var(--font-inter), sans-serif" }}
