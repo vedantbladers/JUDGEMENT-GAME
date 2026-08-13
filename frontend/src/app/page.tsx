@@ -119,7 +119,7 @@ export default function HomePage() {
           ].map((card, i) => (
             <motion.div
               key={card.suit}
-              className="w-16 h-24 sm:w-20 sm:h-28 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100 shadow-2xl flex flex-col items-center justify-between p-2 font-bold border border-slate-300 select-none relative"
+              className="w-16 h-24 sm:w-20 sm:h-28 rounded-xl bg-linear-to-b from-slate-50 to-slate-100 shadow-2xl flex flex-col items-center justify-between p-2 font-bold border border-slate-300 select-none relative"
               style={{
                 transform: `rotate(${(i - 1.5) * 10}deg)`,
                 marginLeft: i > 0 ? "-16px" : "0",

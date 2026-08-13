@@ -34,7 +34,7 @@ export default function RulesPage() {
             How to Play
           </h1>
           <p className="text-xl text-base-content/60 max-w-2xl mx-auto leading-relaxed">
-            Master the art of prediction. In Judgement, winning every trick isn't the goal—winning exactly what you predicted is.
+            Master the art of prediction. In Judgement, winning every trick isn&apos;t the goal—winning exactly what you predicted is.
           </p>
         </motion.div>
 
