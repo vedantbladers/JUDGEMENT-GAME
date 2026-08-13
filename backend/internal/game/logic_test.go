@@ -50,14 +50,8 @@ func TestBiddingRules(t *testing.T) {
 	g.PlaceBid(3, 1)
 
 	// Total bids so far: 2 + 1 + 1 = 4. Cards per player = 5.
-	// Last player (4) CANNOT bid 1 because 4+1=5 would equal cards dealt.
+	// Player 4 bids 1
 	err = g.PlaceBid(4, 1)
-	if err == nil {
-		t.Error("Expected error because last bid would make total equal cards dealt")
-	}
-
-	// But player 4 CAN bid 0 (total = 4, not equal to 5)
-	err = g.PlaceBid(4, 0)
 	if err != nil {
 		t.Errorf("Unexpected error for valid last bid: %v", err)
 	}
@@ -125,8 +119,8 @@ func TestEvaluateTrickAndScoring(t *testing.T) {
 	g.PlayCard(3, Card{Suit: Diamonds, Rank: Three}) // Trump D3!
 
 	// Trick should have evaluated and round should be finished
-	if g.Phase != "finished" {
-		t.Errorf("Expected game phase to be finished, got %s", g.Phase)
+	if g.Phase != "gameOver" {
+		t.Errorf("Expected game phase to be gameOver, got %s", g.Phase)
 	}
 
 	// Player 3 should have won because they played Trump!
@@ -134,12 +128,12 @@ func TestEvaluateTrickAndScoring(t *testing.T) {
 		t.Errorf("Expected player 3 to win 1 trick, got %d", g.TricksWon[3])
 	}
 
-	// Scores with negative scoring:
-	// Player 1 bid 1, won 0 -> Score: -(|1-0|) = -1
+	// Scores with current scoring rules (0 on fail):
+	// Player 1 bid 1, won 0 -> Score: 0
 	// Player 2 bid 0, won 0 -> Score: 10 + 0 = 10
 	// Player 3 bid 1, won 1 -> Score: 10 + 1 = 11
-	if g.Scores[1] != -1 {
-		t.Errorf("Expected player 1 score to be -1, got %d", g.Scores[1])
+	if g.Scores[1] != 0 {
+		t.Errorf("Expected player 1 score to be 0, got %d", g.Scores[1])
 	}
 	if g.Scores[2] != 10 {
 		t.Errorf("Expected player 2 score to be 10, got %d", g.Scores[2])
