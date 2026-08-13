@@ -16,6 +16,7 @@ interface ConfettiPiece {
   duration: number;
   width: number;
   height: number;
+  isCircle: boolean;
 }
 
 interface ConfettiProps {
@@ -29,6 +30,7 @@ export default function Confetti({ trigger, count = 50, duration = 5000 }: Confe
 
   useEffect(() => {
     if (!trigger) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPieces([]);
       return;
     }
@@ -43,6 +45,7 @@ export default function Confetti({ trigger, count = 50, duration = 5000 }: Confe
         duration: 2 + Math.random() * 2,
         width: 6 + Math.random() * 8,
         height: 6 + Math.random() * 8,
+        isCircle: Math.random() > 0.5,
       });
     }
     setPieces(generated);
@@ -67,7 +70,7 @@ export default function Confetti({ trigger, count = 50, duration = 5000 }: Confe
             animationDuration: `${p.duration}s`,
             width: `${p.width}px`,
             height: `${p.height}px`,
-            borderRadius: Math.random() > 0.5 ? "50%" : "2px",
+            borderRadius: p.isCircle ? "50%" : "2px",
           }}
         />
       ))}
