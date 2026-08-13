@@ -1,6 +1,6 @@
 import { WSEvent, GameState, ErrorPayload, PlayerNotification } from "./types";
 
-const WS_BASE_URL = "ws://localhost:8080/api/v1/lobbies";
+const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/api/v1/lobbies";
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const BASE_RECONNECT_DELAY = 1000; // 1 second
