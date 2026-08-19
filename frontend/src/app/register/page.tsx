@@ -42,7 +42,10 @@ export default function RegisterPage() {
       localStorage.setItem("jwt_token", data.token);
       localStorage.setItem("user_id", String(data.user.id));
       localStorage.setItem("username", data.user.username);
-      router.push("/dashboard");
+      localStorage.setItem("wins", "0");
+      localStorage.setItem("losses", "0");
+      localStorage.removeItem("is_guest");
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -157,15 +160,26 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          {/* Login Link */}
+          {/* Login Link & Guest Option */}
           <div className="divider text-base-content/20 text-xs my-6">OR</div>
-          <p className="text-center text-sm text-base-content/40">
-            Already have an account?{" "}
-            <Link href="/login" className="link link-primary font-medium">
-              Sign in
+          
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/"
+              className="btn btn-outline btn-accent btn-sm w-full font-medium"
+            >
+              🎮 Play as Guest (No Account Required)
             </Link>
-          </p>
+            
+            <p className="text-center text-sm text-base-content/40">
+              Already have an account?{" "}
+              <Link href="/login" className="link link-primary font-medium">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
+
       </motion.div>
     </div>
   );
