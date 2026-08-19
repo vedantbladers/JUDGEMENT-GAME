@@ -40,7 +40,23 @@
 **Resolution:** 
 - Upgraded the GitHub Personal Access Token permissions via the developer settings to explicitly grant the `workflow` scope, successfully deploying the CI/CD pipelines.
 
+## 6. The Guest Access & Hybrid Auth Architecture (System Design & UX)
+**Challenge:** Mandatory email/password registration created high friction for casual players receiving a lobby link, leading to user dropoff. However, removing accounts entirely would prevent dedicated players from tracking their win/loss history.
+**Design Constraints:**
+- Guest players needed instant 1-click access without clogging the PostgreSQL database with temporary account rows.
+- Returning guests shouldn't have to re-type their nickname on every visit.
+- Registered users needed persistent win/loss stat tracking displayed on their home page.
+- Username uniqueness validation to prevent guests from impersonating registered users or duplicating active nicknames in a room.
+- Direct "Play as Guest" escape hatch on the Sign Up/Login page.
+**Resolution:**
+- Architected a **Hybrid Authentication Model**:
+  1. **Guest Mode:** Guest nicknames are saved in `localStorage` for 1-click returning convenience. Backend issues temporary session tokens with `is_guest: true`.
+  2. **Registered Users:** Authenticated via permanent JWT tokens. Win/loss stats are updated in PostgreSQL after every match and displayed on the user's home page (`Wins`, `Losses`, `Win Rate`).
+  3. **Seamless Shared Lobbies:** Guests and registered players sit at the exact same game table and play together without distinction during matches.
+  4. **Conversion Prompts:** Added a top header status indicator and a post-game banner (*"Enjoyed your match? Sign up to save your win/loss stats!"*) to convert guests to registered users without forcing them.
+
 ---
 
 ### 💡 Interview Tip:
 If an interviewer asks *"What was the most challenging bug you faced?"*, talk about **Bug #3 (The Cumulative Scoring Bug)**. It shows that you understand how in-memory state management works in Go, how pointers and maps behave, and how WebSocket event loops manage state transitions!
+
