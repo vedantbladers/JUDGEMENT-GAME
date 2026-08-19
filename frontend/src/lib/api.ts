@@ -32,12 +32,17 @@ async function apiFetch<T>(
 
 // --- Auth APIs ---
 
-interface AuthResponse {
-  user: {
-    id: number;
-    username: string;
-    email: string;
-  };
+export interface UserProfile {
+  id: number;
+  username: string;
+  email?: string;
+  wins?: number;
+  losses?: number;
+  is_guest?: boolean;
+}
+
+export interface AuthResponse {
+  user: UserProfile;
   token: string;
 }
 
@@ -61,6 +66,14 @@ export async function loginUser(
     body: JSON.stringify({ email, password }),
   });
 }
+
+export async function guestLogin(username: string): Promise<AuthResponse> {
+  return apiFetch<AuthResponse>("/auth/guest", {
+    method: "POST",
+    body: JSON.stringify({ username }),
+  });
+}
+
 
 // --- Lobby APIs ---
 
