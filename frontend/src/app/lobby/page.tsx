@@ -61,9 +61,9 @@ export default function LobbyPage() {
 
       {/* Navbar */}
       <nav className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-20">
-        <Link href="/dashboard" className="btn btn-ghost btn-sm">
+        <Link href="/" className="btn btn-ghost btn-sm text-slate-300 hover:text-amber-300">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
+          Back to Main Page
         </Link>
       </nav>
 

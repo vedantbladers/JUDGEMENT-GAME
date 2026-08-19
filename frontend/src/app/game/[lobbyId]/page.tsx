@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { connectToLobby, sendEvent } from "@/lib/websocket";
 import { GameState, Suit, Card } from "@/lib/types";
 import { getSuitSymbol } from "@/lib/cardUtils";
@@ -212,7 +213,7 @@ export default function GamePage() {
             {connected ? "Live" : "Offline"}
           </div>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/')}
             className="btn btn-ghost btn-sm text-red-400 hover:bg-red-500/10 border border-red-500/20 ml-2"
           >
             <LogOut className="w-4 h-4 md:mr-1.5" />
@@ -672,8 +673,10 @@ export default function GamePage() {
                 ) : (
                   <p className="text-sm text-base-content/50 mt-4">Waiting for host to start next round...</p>
                 )}
+
               </div>
             </motion.div>
+
           </>
         )}
 
@@ -687,9 +690,9 @@ export default function GamePage() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 200, damping: 18 }}
-              className="glass-card rounded-3xl w-full max-w-2xl p-10 border-2 border-primary/20 shadow-2xl shadow-primary/10"
+              className="glass-card rounded-3xl w-full max-w-2xl p-10 border-2 border-primary/20 shadow-2xl shadow-primary/10 text-center"
             >
-              <div className="text-center">
+              <div>
                 <motion.div
                   animate={{ y: [0, -20, 0] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -739,11 +742,26 @@ export default function GamePage() {
                     ))}
                 </div>
 
+                {/* Guest Conversion Banner - ONLY on Final Standings */}
+                {typeof window !== "undefined" && localStorage.getItem("is_guest") === "true" && (
+                  <div className="mt-6 mb-6 p-4 rounded-xl bg-amber-400/10 border border-amber-400/30 text-center max-w-md mx-auto">
+                    <p className="text-sm text-amber-200 font-medium mb-2">
+                      💡 Enjoyed your match? Sign up to save your win/loss stats!
+                    </p>
+                    <Link
+                      href="/register"
+                      className="btn btn-accent btn-sm gap-1 font-heading"
+                    >
+                      Create Account & Save Stats
+                    </Link>
+                  </div>
+                )}
+
                 <a
-                  href="/lobby"
+                  href="/"
                   className="btn btn-outline btn-lg w-full max-w-xs mx-auto"
                 >
-                  Back to Lobby
+                  Back to Home
                 </a>
               </div>
             </motion.div>

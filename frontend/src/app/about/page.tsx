@@ -13,9 +13,9 @@ export default function AboutPage() {
 
       {/* Navbar */}
       <nav className="w-full p-6 flex justify-between items-center relative z-10">
-        <Link href="/dashboard" className="btn btn-ghost btn-sm">
+        <Link href="/" className="btn btn-ghost btn-sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
+          Back to Home
         </Link>
       </nav>
 
