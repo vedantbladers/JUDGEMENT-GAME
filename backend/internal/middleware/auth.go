@@ -10,8 +10,10 @@ import (
 
 // UserIDKey is the context key for the user ID
 type UserIDKey string
+type UsernameKey string
 
 const ContextUserIDKey UserIDKey = "userID"
+const ContextUsernameKey UsernameKey = "username"
 
 // AuthMiddleware validates JWT tokens and injects the user ID into the context
 func AuthMiddleware(secret string) func(http.Handler) http.Handler {
@@ -66,8 +68,11 @@ func AuthMiddleware(secret string) func(http.Handler) http.Handler {
 				return
 			}
 
-			// Add the user ID to the request context
+			username, _ := claims["username"].(string)
+
+			// Add the user ID and username to the request context
 			ctx := context.WithValue(r.Context(), ContextUserIDKey, int(userIDFloat))
+			ctx = context.WithValue(ctx, ContextUsernameKey, username)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
