@@ -32,6 +32,7 @@ func (h *Handler) createLobby(w http.ResponseWriter, r *http.Request) {
 		h.respondError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
+	username, _ := r.Context().Value(middleware.ContextUsernameKey).(string)
 
 	var req models.CreateLobbyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -39,7 +40,7 @@ func (h *Handler) createLobby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := h.service.CreateLobby(userID, &req)
+	resp, err := h.service.CreateLobby(userID, username, &req)
 	if err != nil {
 		h.respondError(w, http.StatusBadRequest, err.Error())
 		return
@@ -54,6 +55,7 @@ func (h *Handler) joinLobby(w http.ResponseWriter, r *http.Request) {
 		h.respondError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
+	username, _ := r.Context().Value(middleware.ContextUsernameKey).(string)
 
 	lobbyID := chi.URLParam(r, "lobbyID")
 	if lobbyID == "" {
@@ -61,7 +63,7 @@ func (h *Handler) joinLobby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := h.service.JoinLobby(userID, lobbyID)
+	resp, err := h.service.JoinLobby(userID, username, lobbyID)
 	if err != nil {
 		h.respondError(w, http.StatusBadRequest, err.Error())
 		return

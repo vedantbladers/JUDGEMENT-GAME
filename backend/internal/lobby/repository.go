@@ -36,7 +36,7 @@ func generateLobbyID() string {
 }
 
 // CreateLobby inserts a new lobby and adds the host as the first player
-func (r *Repository) CreateLobby(hostID, maxPlayers int) (*models.Lobby, error) {
+func (r *Repository) CreateLobby(hostID, maxPlayers int, username string) (*models.Lobby, error) {
 	lobbyID := generateLobbyID()
 	lobby := &models.Lobby{
 		ID:         lobbyID,
@@ -53,8 +53,9 @@ func (r *Repository) CreateLobby(hostID, maxPlayers int) (*models.Lobby, error) 
 
 		// Add host to lobby_players
 		lobbyPlayer := &models.LobbyPlayer{
-			LobbyID: lobbyID,
-			UserID:  hostID,
+			LobbyID:  lobbyID,
+			UserID:   hostID,
+			Username: username,
 		}
 		if err := tx.Create(lobbyPlayer).Error; err != nil {
 			return err
@@ -84,10 +85,11 @@ func (r *Repository) GetLobby(lobbyID string) (*models.Lobby, error) {
 }
 
 // JoinLobby adds a user to a lobby
-func (r *Repository) JoinLobby(lobbyID string, userID int) error {
+func (r *Repository) JoinLobby(lobbyID string, userID int, username string) error {
 	lobbyPlayer := &models.LobbyPlayer{
-		LobbyID: lobbyID,
-		UserID:  userID,
+		LobbyID:  lobbyID,
+		UserID:   userID,
+		Username: username,
 	}
 	result := r.db.Create(lobbyPlayer)
 	if result.Error != nil {
@@ -96,16 +98,35 @@ func (r *Repository) JoinLobby(lobbyID string, userID int) error {
 	return nil
 }
 
-// GetPlayersInLobby retrieves all users currently in a lobby
+// GetPlayersInLobby retrieves all users (registered & guests) currently in a lobby
 func (r *Repository) GetPlayersInLobby(lobbyID string) ([]models.User, error) {
-	var players []models.User
-	
-	// Join lobby_players with users table
-	err := r.db.
-		Joins("JOIN lobby_players ON users.id = lobby_players.user_id").
-		Where("lobby_players.lobby_id = ?", lobbyID).
-		Order("lobby_players.joined_at ASC").
-		Find(&players).Error
+	var lobbyPlayers []models.LobbyPlayer
+	err := r.db.Where("lobby_id = ?", lobbyID).Order("joined_at ASC").Find(&lobbyPlayers).Error
+	if err != nil {
+		return nil, err
+	}
 
-	return players, err
+	var players []models.User
+	for _, lp := range lobbyPlayers {
+		if lp.UserID > 0 {
+			var u models.User
+			if err := r.db.First(&u, lp.UserID).Error; err == nil {
+				players = append(players, u)
+				continue
+			}
+		}
+
+		// Fallback for guest users or unregistered IDs
+		uname := lp.Username
+		if uname == "" {
+			uname = "Guest"
+		}
+		players = append(players, models.User{
+			ID:       lp.UserID,
+			Username: uname,
+			IsGuest:  true,
+		})
+	}
+
+	return players, nil
 }
