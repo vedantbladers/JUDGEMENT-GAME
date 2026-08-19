@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"time"
 
 	"github.com/vedantbladers/JUDGEMENT-GAME/backend/internal/models"
 	"golang.org/x/crypto/bcrypt"
@@ -41,7 +42,7 @@ func (s *Service) Register(req *models.RegisterRequest) (*models.AuthResponse, e
 	}
 
 	// Generate JWT
-	token, err := GenerateToken(user.ID, s.secret)
+	token, err := GenerateToken(user.ID, user.Username, s.secret)
 	if err != nil {
 		return nil, errors.New("failed to generate token")
 	}
@@ -67,7 +68,7 @@ func (s *Service) Login(req *models.LoginRequest) (*models.AuthResponse, error) 
 	}
 
 	// Generate JWT
-	token, err := GenerateToken(user.ID, s.secret)
+	token, err := GenerateToken(user.ID, user.Username, s.secret)
 	if err != nil {
 		return nil, errors.New("failed to generate token")
 	}
@@ -77,3 +78,38 @@ func (s *Service) Login(req *models.LoginRequest) (*models.AuthResponse, error) 
 		User:  *user,
 	}, nil
 }
+
+// GuestLogin creates a temporary guest session if the username is not already registered
+func (s *Service) GuestLogin(req *models.GuestLoginRequest) (*models.AuthResponse, error) {
+	if req.Username == "" {
+		return nil, errors.New("username is required")
+	}
+
+	// Check if username is already registered as a real user
+	existingUser, err := s.repo.GetUserByUsername(req.Username)
+	if err == nil && existingUser != nil {
+		return nil, errors.New("username is already registered. Please sign in or choose another nickname")
+	}
+
+	// Generate a unique negative guest ID using timestamp hash
+	guestID := -int(time.Now().UnixNano() % 1000000000)
+
+	token, err := GenerateGuestToken(guestID, req.Username, s.secret)
+	if err != nil {
+		return nil, errors.New("failed to generate guest token")
+	}
+
+	guestUser := models.User{
+		ID:        guestID,
+		Username:  req.Username,
+		Email:     "",
+		IsGuest:   true,
+		CreatedAt: time.Now(),
+	}
+
+	return &models.AuthResponse{
+		Token: token,
+		User:  guestUser,
+	}, nil
+}
+
