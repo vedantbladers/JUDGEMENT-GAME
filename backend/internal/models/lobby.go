@@ -15,6 +15,7 @@ type Lobby struct {
 type LobbyPlayer struct {
 	LobbyID  string    `gorm:"primaryKey"`
 	UserID   int       `gorm:"primaryKey"`
+	Username string    `gorm:"default:''"`
 	JoinedAt time.Time `gorm:"autoCreateTime"`
 }
 
