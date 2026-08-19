@@ -18,13 +18,13 @@ func NewService(repo *Repository) *Service {
 }
 
 // CreateLobby validates and creates a new game lobby
-func (s *Service) CreateLobby(hostID int, req *models.CreateLobbyRequest) (*models.LobbyResponse, error) {
+func (s *Service) CreateLobby(hostID int, username string, req *models.CreateLobbyRequest) (*models.LobbyResponse, error) {
 	if req.MaxPlayers < 2 || req.MaxPlayers > 4 {
 		// Judgement usually requires 4 players, but we can allow 2-4 for testing
 		return nil, errors.New("lobby max players must be between 2 and 4")
 	}
 
-	lobby, err := s.repo.CreateLobby(hostID, req.MaxPlayers)
+	lobby, err := s.repo.CreateLobby(hostID, req.MaxPlayers, username)
 	if err != nil {
 		return nil, errors.New("failed to create lobby")
 	}
@@ -41,7 +41,7 @@ func (s *Service) CreateLobby(hostID int, req *models.CreateLobbyRequest) (*mode
 }
 
 // JoinLobby allows a user to join an existing lobby
-func (s *Service) JoinLobby(userID int, lobbyID string) (*models.LobbyResponse, error) {
+func (s *Service) JoinLobby(userID int, username string, lobbyID string) (*models.LobbyResponse, error) {
 	lobbyID = strings.ToUpper(strings.TrimSpace(lobbyID))
 
 	// Fetch the lobby to check its status and player count
@@ -75,7 +75,7 @@ func (s *Service) JoinLobby(userID int, lobbyID string) (*models.LobbyResponse, 
 	}
 
 	// Actually join the lobby
-	if err := s.repo.JoinLobby(lobbyID, userID); err != nil {
+	if err := s.repo.JoinLobby(lobbyID, userID, username); err != nil {
 		return nil, errors.New("failed to join lobby")
 	}
 

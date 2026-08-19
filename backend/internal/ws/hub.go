@@ -212,12 +212,41 @@ func (h *Hub) handleAction(action Action) {
 		}
 
 		h.broadcastGameState(lobbyID)
+		if g.Phase == "finished" {
+			h.recordGameStats(g)
+		}
 		// (Game over lobby deletion is handled when the last player unregisters)
 	
 	default:
 		log.Printf("Unknown event type: %s", action.Event.Type)
 	}
 }
+
+// recordGameStats updates win/loss stats in PostgreSQL for registered players (ID > 0)
+func (h *Hub) recordGameStats(g *game.GameState) {
+	if h.db == nil || len(g.Scores) == 0 {
+		return
+	}
+
+	maxScore := -999999
+	for _, score := range g.Scores {
+		if score > maxScore {
+			maxScore = score
+		}
+	}
+
+	for playerID, score := range g.Scores {
+		// Only update stats for registered accounts (positive IDs)
+		if playerID > 0 {
+			if score == maxScore {
+				h.db.Exec("UPDATE users SET wins = wins + 1 WHERE id = ?", playerID)
+			} else {
+				h.db.Exec("UPDATE users SET losses = losses + 1 WHERE id = ?", playerID)
+			}
+		}
+	}
+}
+
 
 // sendError sends a targeted error message back to the offending client
 func (h *Hub) sendError(client *Client, message string) {

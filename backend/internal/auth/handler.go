@@ -22,6 +22,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Post("/register", h.register)
 	r.Post("/login", h.login)
+	r.Post("/guest", h.guestLogin)
 }
 
 func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +61,23 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 
 	h.respondJSON(w, http.StatusOK, resp)
 }
+
+func (h *Handler) guestLogin(w http.ResponseWriter, r *http.Request) {
+	var req models.GuestLoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.respondError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	resp, err := h.service.GuestLogin(&req)
+	if err != nil {
+		h.respondError(w, http.StatusConflict, err.Error())
+		return
+	}
+
+	h.respondJSON(w, http.StatusOK, resp)
+}
+
 
 // Helper function for JSON responses
 func (h *Handler) respondJSON(w http.ResponseWriter, status int, payload interface{}) {

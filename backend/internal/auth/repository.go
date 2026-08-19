@@ -39,3 +39,17 @@ func (r *Repository) GetUserByEmail(email string) (*models.User, error) {
 	}
 	return &user, nil
 }
+
+// GetUserByUsername retrieves a user by their username
+func (r *Repository) GetUserByUsername(username string) (*models.User, error) {
+	var user models.User
+	result := r.db.Where("LOWER(username) = LOWER(?)", username).First(&user)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user not found: %w", result.Error)
+		}
+		return nil, fmt.Errorf("database error: %w", result.Error)
+	}
+	return &user, nil
+}
+
