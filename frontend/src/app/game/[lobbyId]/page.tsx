@@ -35,7 +35,6 @@ export default function GamePage() {
   const [connected, setConnected] = useState(false);
   const [bidInput, setBidInput] = useState(0);
   const [cardsPerPlayer, setCardsPerPlayer] = useState(5);
-  const [trumpSuit, setTrumpSuit] = useState<Suit>("SPADES");
   const [playerLeftAlert, setPlayerLeftAlert] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
   const router = useRouter();
@@ -97,13 +96,19 @@ export default function GamePage() {
     }
   }, [gameState?.phase]);
 
+  const TRUMP_SEQUENCE: Suit[] = ["HEARTS", "SPADES", "DIAMONDS", "CLUBS"];
+  const nextTrumpSuit: Suit =
+    !gameState || !gameState.trump_suit
+      ? "HEARTS"
+      : TRUMP_SEQUENCE[(TRUMP_SEQUENCE.indexOf(gameState.trump_suit) + 1) % TRUMP_SEQUENCE.length];
+
   const handleStartGame = () => {
     if (!wsRef.current) return;
     sendEvent(wsRef.current, {
       type: "START_GAME",
       payload: {
         cards_per_player: cardsPerPlayer,
-        trump_suit: trumpSuit,
+        trump_suit: nextTrumpSuit,
       },
     });
   };
@@ -139,12 +144,11 @@ export default function GamePage() {
     });
   };
 
-  // Helper: check if player is a bot
+  // Helper: check if player is a bot (IDs -501 to -510)
   const isBotPlayer = (pid: number) => {
-    if (pid < 0) {
-      const name = gameState?.player_names?.[pid];
-      if (name?.includes("(Bot)") || pid <= -500) return true;
-    }
+    if (pid >= -510 && pid <= -501) return true;
+    const name = gameState?.player_names?.[pid];
+    if (name?.includes("(Bot)")) return true;
     return false;
   };
 
@@ -172,8 +176,6 @@ export default function GamePage() {
       return () => clearTimeout(timer);
     }
   }, [maxBid, bidInput]);
-
-  const allSuits: Suit[] = ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"];
 
   // Calculate maximum possible cards based on player count (52 cards in a deck)
   const maxPossibleCards =
@@ -389,22 +391,20 @@ export default function GamePage() {
                     ))}
                   </select>
                 </div>
-
                 <div className="w-full">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                    Trump Suit
+                    Trump Sequence
                   </label>
-                  <select
-                    className="select select-bordered select-sm w-full bg-slate-900 border-slate-700 text-slate-100 focus:border-cyan-400"
-                    value={trumpSuit}
-                    onChange={(e) => setTrumpSuit(e.target.value as Suit)}
-                  >
-                    {allSuits.map((s) => (
-                      <option key={s} value={s}>
-                        {getSuitSymbol(s)} {s}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-xs">
+                    <span className="font-semibold text-rose-400">♥ Heart</span>
+                    <span className="text-slate-600">→</span>
+                    <span className="font-semibold text-slate-300">♠ Spade</span>
+                    <span className="text-slate-600">→</span>
+                    <span className="font-semibold text-amber-400">♦ Diamond</span>
+                    <span className="text-slate-600">→</span>
+                    <span className="font-semibold text-emerald-400">♣ Clover</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 mt-1 block">Round 1 starts on Hearts, alternating each round</span>
                 </div>
               </div>
 
@@ -750,9 +750,9 @@ export default function GamePage() {
                 {gameState.host_id === userId ? (
                   <button
                     onClick={handleStartGame}
-                    className="btn bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold btn-lg w-full rounded-xl shadow-lg shadow-cyan-500/20 border-none"
+                    className="btn bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold btn-lg w-full rounded-xl shadow-lg shadow-cyan-500/20 border-none flex items-center justify-center gap-2"
                   >
-                    <Play className="w-4 h-4" /> Play Next Round
+                    <Play className="w-5 h-5 fill-slate-950" /> Play Next Round ({getSuitSymbol(nextTrumpSuit)} {nextTrumpSuit})
                   </button>
                 ) : (
                   <p className="text-sm text-slate-400 mt-4">Waiting for table host to start next round...</p>
