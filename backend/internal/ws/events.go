@@ -14,6 +14,8 @@ const (
 	EventStartGame EventType = "START_GAME"
 	EventPlaceBid  EventType = "PLACE_BID"
 	EventPlayCard  EventType = "PLAY_CARD"
+	EventAddBot    EventType = "ADD_BOT"
+	EventRemoveBot EventType = "REMOVE_BOT"
 
 	// Outbound Events (Server -> Client)
 	EventStateUpdate  EventType = "STATE_UPDATE"
@@ -50,6 +52,11 @@ type PlaceBidPayload struct {
 // PlayCardPayload represents the payload to play a card
 type PlayCardPayload struct {
 	Card game.Card `json:"card"`
+}
+
+// RemoveBotPayload represents the payload to remove a bot
+type RemoveBotPayload struct {
+	BotID int `json:"bot_id"`
 }
 
 // ErrorPayload represents an error message sent back to a client

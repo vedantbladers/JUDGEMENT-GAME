@@ -3,6 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -33,6 +34,15 @@ type Client struct {
 	UserID   int
 	Username string
 	LobbyID  string
+
+	closeOnce sync.Once
+}
+
+// CloseSend safely closes the Send channel at most once
+func (c *Client) CloseSend() {
+	c.closeOnce.Do(func() {
+		close(c.Send)
+	})
 }
 
 // readPump pumps messages from the websocket connection to the hub.
