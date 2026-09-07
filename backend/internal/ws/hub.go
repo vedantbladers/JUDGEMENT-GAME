@@ -236,7 +236,21 @@ func (h *Hub) handleAction(action Action) {
 			}
 		}
 
-		if err := g.StartRound(payload.CardsPerPlayer, payload.TrumpSuit); err != nil {
+		// Alternating trump sequence: Hearts -> Spades -> Diamonds -> Clubs (Clover)
+		trumpSeq := []game.Suit{game.Hearts, game.Spades, game.Diamonds, game.Clubs}
+		selectedTrump := game.Hearts
+		if g.TrumpSuit != "" {
+			for idx, s := range trumpSeq {
+				if s == g.TrumpSuit {
+					selectedTrump = trumpSeq[(idx+1)%len(trumpSeq)]
+					break
+				}
+			}
+		} else if payload.TrumpSuit != "" {
+			selectedTrump = payload.TrumpSuit
+		}
+
+		if err := g.StartRound(payload.CardsPerPlayer, selectedTrump); err != nil {
 			h.sendError(action.Client, err.Error())
 			return
 		}
