@@ -37,10 +37,15 @@ func main() {
 	r := chi.NewRouter()
 
 	// 4. Register global middleware
+	allowedOrigins := []string{"http://localhost:3000", "http://127.0.0.1:3000"}
+	if cfg.FrontendUrl != "" && cfg.FrontendUrl != "http://localhost:3000" {
+		allowedOrigins = append(allowedOrigins, cfg.FrontendUrl)
+	}
+
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", cfg.FrontendUrl},
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
@@ -62,7 +67,7 @@ func main() {
 	// Initialize WebSocket Hub
 	wsHub := ws.NewHub(db)
 	go wsHub.Run()
-	wsHandler := ws.NewHandler(wsHub)
+	wsHandler := ws.NewHandler(wsHub, cfg.FrontendUrl)
 
 	// 6. Register Routes
 	r.Get("/health", healthCheckHandler)

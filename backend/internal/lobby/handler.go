@@ -26,6 +26,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 }
 
 func (h *Handler) createLobby(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1048576) // 1MB limit
 	// Extract the userID from the context (injected by AuthMiddleware)
 	userID, ok := r.Context().Value(middleware.ContextUserIDKey).(int)
 	if !ok {
