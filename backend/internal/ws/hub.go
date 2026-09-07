@@ -3,6 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/vedantbladers/JUDGEMENT-GAME/backend/internal/game"
 	"github.com/vedantbladers/JUDGEMENT-GAME/backend/internal/models"
@@ -22,6 +23,9 @@ type Hub struct {
 
 	// LobbyHosts tracks the UserID of the host for each LobbyID
 	LobbyHosts map[string]int
+
+	// LobbyBots tracks bot users per LobbyID (BotID -> BotName)
+	LobbyBots map[string]map[int]string
 
 	// Inbound messages from the clients.
 	Actions chan Action
@@ -43,6 +47,7 @@ func NewHub(db *gorm.DB) *Hub {
 		Lobbies:    make(map[string]map[*Client]bool),
 		Games:      make(map[string]*game.GameState),
 		LobbyHosts: make(map[string]int),
+		LobbyBots:  make(map[string]map[int]string),
 	}
 }
 
@@ -68,7 +73,7 @@ func (h *Hub) Run() {
 		case client := <-h.Unregister:
 			if _, ok := h.Lobbies[client.LobbyID][client]; ok {
 				delete(h.Lobbies[client.LobbyID], client)
-				close(client.Send)
+				client.CloseSend()
 
 				// Broadcast player left notification
 				h.broadcastPlayerEvent(client, EventPlayerLeft)
@@ -83,6 +88,7 @@ func (h *Hub) Run() {
 					delete(h.Lobbies, client.LobbyID)
 					delete(h.Games, client.LobbyID)
 					delete(h.LobbyHosts, client.LobbyID)
+					delete(h.LobbyBots, client.LobbyID)
 				} else {
 					// Handle Host reassignment if the host left
 					if h.LobbyHosts[client.LobbyID] == client.UserID {
@@ -120,6 +126,58 @@ func (h *Hub) handleAction(action Action) {
 	userID := action.Client.UserID
 
 	switch action.Event.Type {
+	case EventAddBot:
+		// Only host can add bots
+		if h.LobbyHosts[lobbyID] != userID {
+			h.sendError(action.Client, "Only the host can add bots")
+			return
+		}
+		g, hasGame := h.Games[lobbyID]
+		if hasGame && g.Phase != "waiting" {
+			h.sendError(action.Client, "Cannot add bots while a game is in progress")
+			return
+		}
+
+		if h.LobbyBots[lobbyID] == nil {
+			h.LobbyBots[lobbyID] = make(map[int]string)
+		}
+
+		currentCount := len(h.Lobbies[lobbyID]) + len(h.LobbyBots[lobbyID])
+		if currentCount >= 4 {
+			h.sendError(action.Client, "Lobby is full (maximum 4 players)")
+			return
+		}
+
+		botIdx := len(h.LobbyBots[lobbyID])
+		botPersona := game.BotPersonas[botIdx%len(game.BotPersonas)]
+		botID := -500 - (botIdx + 1)
+		h.LobbyBots[lobbyID][botID] = botPersona.Name
+
+		h.broadcastGameState(lobbyID)
+
+	case EventRemoveBot:
+		if h.LobbyHosts[lobbyID] != userID {
+			h.sendError(action.Client, "Only the host can remove bots")
+			return
+		}
+		g, hasGame := h.Games[lobbyID]
+		if hasGame && g.Phase != "waiting" {
+			h.sendError(action.Client, "Cannot remove bots while a game is in progress")
+			return
+		}
+
+		var payload RemoveBotPayload
+		if err := json.Unmarshal(action.Event.Payload, &payload); err == nil && payload.BotID < 0 {
+			delete(h.LobbyBots[lobbyID], payload.BotID)
+		} else {
+			for bID := range h.LobbyBots[lobbyID] {
+				delete(h.LobbyBots[lobbyID], bID)
+				break
+			}
+		}
+
+		h.broadcastGameState(lobbyID)
+
 	case EventStartGame:
 		// Only host can start game
 		if h.LobbyHosts[lobbyID] != userID {
@@ -134,7 +192,7 @@ func (h *Hub) handleAction(action Action) {
 			return
 		}
 
-		// Gather unique player IDs currently in the lobby
+		// Gather unique player IDs currently in the lobby (humans + bots)
 		clients := h.Lobbies[lobbyID]
 		var playerIDs []int
 		seen := make(map[int]bool)
@@ -144,9 +202,17 @@ func (h *Hub) handleAction(action Action) {
 				playerIDs = append(playerIDs, c.UserID)
 			}
 		}
+		if bots, exists := h.LobbyBots[lobbyID]; exists {
+			for bID := range bots {
+				if !seen[bID] {
+					seen[bID] = true
+					playerIDs = append(playerIDs, bID)
+				}
+			}
+		}
 
 		if len(playerIDs) < 2 {
-			h.sendError(action.Client, "Not enough players to start")
+			h.sendError(action.Client, "Not enough players to start (need at least 2 players or bots)")
 			return
 		}
 
@@ -160,9 +226,14 @@ func (h *Hub) handleAction(action Action) {
 			g.Players = playerIDs
 		}
 
-		// Populate player names from connected clients
+		// Populate player names from connected clients and bots
 		for c := range clients {
 			g.PlayerNames[c.UserID] = c.Username
+		}
+		if bots, exists := h.LobbyBots[lobbyID]; exists {
+			for bID, bName := range bots {
+				g.PlayerNames[bID] = bName
+			}
 		}
 
 		if err := g.StartRound(payload.CardsPerPlayer, payload.TrumpSuit); err != nil {
@@ -172,6 +243,7 @@ func (h *Hub) handleAction(action Action) {
 
 		h.Games[lobbyID] = g
 		h.broadcastGameState(lobbyID)
+		h.scheduleBotMove(lobbyID)
 
 	case EventPlaceBid:
 		g, ok := h.Games[lobbyID]
@@ -192,6 +264,7 @@ func (h *Hub) handleAction(action Action) {
 		}
 
 		h.broadcastGameState(lobbyID)
+		h.scheduleBotMove(lobbyID)
 
 	case EventPlayCard:
 		g, ok := h.Games[lobbyID]
@@ -214,6 +287,8 @@ func (h *Hub) handleAction(action Action) {
 		h.broadcastGameState(lobbyID)
 		if g.Phase == "finished" {
 			h.recordGameStats(g)
+		} else {
+			h.scheduleBotMove(lobbyID)
 		}
 		// (Game over lobby deletion is handled when the last player unregisters)
 	
@@ -247,9 +322,85 @@ func (h *Hub) recordGameStats(g *game.GameState) {
 	}
 }
 
+// scheduleBotMove checks if the current turn belongs to a bot and schedules an action
+func (h *Hub) scheduleBotMove(lobbyID string) {
+	g, ok := h.Games[lobbyID]
+	if !ok || len(g.Players) == 0 {
+		return
+	}
+
+	if g.Phase != "bidding" && g.Phase != "playing" {
+		return
+	}
+
+	currentPID := g.Players[g.TurnIndex]
+	bots := h.LobbyBots[lobbyID]
+	if bots == nil {
+		return
+	}
+	botName, isBot := bots[currentPID]
+	if !isBot {
+		return
+	}
+
+	// Snapshot needed fields for the goroutine
+	currentPhase := g.Phase
+	turnIndex := g.TurnIndex
+	hand := make([]game.Card, len(g.Hands[currentPID]))
+	copy(hand, g.Hands[currentPID])
+	trick := make([]game.Play, len(g.CurrentTrick))
+	copy(trick, g.CurrentTrick)
+	trump := g.TrumpSuit
+	cardsPerPlayer := g.CardsPerPlayer
+	myBid := g.Bids[currentPID]
+	myWon := g.TricksWon[currentPID]
+	numPlayers := len(g.Players)
+	isDealer := (turnIndex == (g.LeadIndex+numPlayers-1)%numPlayers)
+
+	bidsSnapshot := make(map[int]int)
+	for k, v := range g.Bids {
+		bidsSnapshot[k] = v
+	}
+
+	go func() {
+		// Human-like deliberation pause
+		time.Sleep(800 * time.Millisecond)
+
+		var actionEvent Event
+		if currentPhase == "bidding" {
+			calculatedBid := game.CalculateBid(hand, trump, cardsPerPlayer, bidsSnapshot, isDealer)
+			payloadBytes, _ := json.Marshal(PlaceBidPayload{Bid: calculatedBid})
+			actionEvent = Event{
+				Type:    EventPlaceBid,
+				Payload: payloadBytes,
+			}
+		} else if currentPhase == "playing" {
+			chosenCard := game.ChooseCardToPlay(hand, trick, trump, myBid, myWon, numPlayers)
+			payloadBytes, _ := json.Marshal(PlayCardPayload{Card: chosenCard})
+			actionEvent = Event{
+				Type:    EventPlayCard,
+				Payload: payloadBytes,
+			}
+		}
+
+		botClient := &Client{
+			UserID:   currentPID,
+			Username: botName,
+			LobbyID:  lobbyID,
+		}
+		h.Actions <- Action{
+			Client: botClient,
+			Event:  actionEvent,
+		}
+	}()
+}
 
 // sendError sends a targeted error message back to the offending client
 func (h *Hub) sendError(client *Client, message string) {
+	if client == nil || client.Send == nil {
+		log.Printf("[Notice]: %s", message)
+		return
+	}
 	errPayload := ErrorPayload{Message: message}
 	b, _ := json.Marshal(errPayload)
 	
@@ -258,7 +409,11 @@ func (h *Hub) sendError(client *Client, message string) {
 		Payload: b,
 	}
 	eb, _ := json.Marshal(event)
-	client.Send <- eb
+	select {
+	case client.Send <- eb:
+	default:
+		client.CloseSend()
+	}
 }
 
 // broadcastPlayerEvent sends a player joined/left notification to all clients in a lobby
@@ -283,8 +438,8 @@ func (h *Hub) broadcastPlayerEvent(player *Client, eventType EventType) {
 		select {
 		case client.Send <- eb:
 		default:
-			close(client.Send)
-			delete(h.Lobbies[client.LobbyID], client)
+			client.CloseSend()
+			delete(h.Lobbies[player.LobbyID], client)
 		}
 	}
 }
@@ -304,14 +459,27 @@ func (h *Hub) broadcastGameState(lobbyID string) {
 				playerIDs = append(playerIDs, c.UserID)
 			}
 		}
+		if bots, exists := h.LobbyBots[lobbyID]; exists {
+			for bID := range bots {
+				if !seen[bID] {
+					seen[bID] = true
+					playerIDs = append(playerIDs, bID)
+				}
+			}
+		}
 		g = game.NewGame(lobbyID, playerIDs)
 		g.HostID = h.LobbyHosts[lobbyID]
 		// We DO NOT save this to h.Games yet, it's just a temporary state for the UI
 	}
 
-	// Always populate player names from connected clients (keeps them fresh)
+	// Always populate player names from connected clients and bots
 	for c := range clients {
 		g.PlayerNames[c.UserID] = c.Username
+	}
+	if bots, exists := h.LobbyBots[lobbyID]; exists {
+		for bID, bName := range bots {
+			g.PlayerNames[bID] = bName
+		}
 	}
 
 	for client := range clients {
@@ -342,7 +510,7 @@ func (h *Hub) sendGameStateToClient(client *Client, g *game.GameState) {
 	select {
 	case client.Send <- eventBytes:
 	default:
-		close(client.Send)
+		client.CloseSend()
 		delete(h.Lobbies[client.LobbyID], client)
 	}
 }
