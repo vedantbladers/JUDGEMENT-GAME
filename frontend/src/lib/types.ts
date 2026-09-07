@@ -36,6 +36,8 @@ export interface GameState {
 // Event types (must match Go backend ws/events.go)
 export type EventType =
   | "START_GAME"
+  | "ADD_BOT"
+  | "REMOVE_BOT"
   | "PLACE_BID"
   | "PLAY_CARD"
   | "STATE_UPDATE"
