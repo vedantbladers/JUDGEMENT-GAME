@@ -4,28 +4,56 @@ import (
 	"log"
 	"net/http"
 
+	"strings"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	"github.com/vedantbladers/JUDGEMENT-GAME/backend/internal/middleware"
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	// Allow all origins for development
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
 // Handler manages WebSocket upgrades
 type Handler struct {
-	Hub *Hub
+	Hub         *Hub
+	frontendURL string
+	upgrader    websocket.Upgrader
 }
 
-// NewHandler creates a new WebSocket handler
-func NewHandler(hub *Hub) *Handler {
-	return &Handler{Hub: hub}
+func isAllowedOrigin(origin string, frontendURL string) bool {
+	if origin == "" {
+		return true // Allow same-origin or non-browser clients
+	}
+	allowed := []string{
+		"http://localhost:3000",
+		"http://127.0.0.1:3000",
+		"http://localhost:8080",
+		"http://127.0.0.1:8080",
+		"http://localhost:5173",
+	}
+	if frontendURL != "" {
+		allowed = append(allowed, strings.TrimRight(frontendURL, "/"))
+	}
+	originTrimmed := strings.TrimRight(origin, "/")
+	for _, a := range allowed {
+		if strings.EqualFold(originTrimmed, a) {
+			return true
+		}
+	}
+	return false
+}
+
+// NewHandler creates a new WebSocket handler with secure origin validation
+func NewHandler(hub *Hub, frontendURL string) *Handler {
+	return &Handler{
+		Hub:         hub,
+		frontendURL: frontendURL,
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				return isAllowedOrigin(r.Header.Get("Origin"), frontendURL)
+			},
+		},
+	}
 }
 
 // RegisterRoutes registers the websocket route
@@ -56,7 +84,7 @@ func (h *Handler) serveWs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 4. Upgrade the HTTP connection to a WebSocket connection
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("WebSocket upgrade failed:", err)
 		return
