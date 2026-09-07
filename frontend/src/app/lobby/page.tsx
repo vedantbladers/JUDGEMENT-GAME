@@ -20,8 +20,13 @@ export default function LobbyPage() {
   const [username, setUsername] = useState("Player");
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUsername(localStorage.getItem("username") || "Player");
+    const timer = setTimeout(() => {
+      const saved = localStorage.getItem("username");
+      if (saved) {
+        setUsername(saved);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleCreate = async () => {
@@ -56,14 +61,14 @@ export default function LobbyPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-base-100 relative overflow-hidden px-4 pt-16">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#070a0f] relative overflow-hidden px-4 pt-16">
       <ParticleBackground />
 
       {/* Navbar */}
       <nav className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-20">
-        <Link href="/" className="btn btn-ghost btn-sm text-slate-300 hover:text-amber-300">
+        <Link href="/" className="btn btn-ghost btn-sm text-slate-400 hover:text-cyan-400 hover:bg-slate-800/50">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Main Page
+          Back to Home
         </Link>
       </nav>
 
@@ -76,12 +81,14 @@ export default function LobbyPage() {
         {/* Header */}
         <div className="text-center mb-10">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <Spade className="w-7 h-7 text-primary" />
-            <h1 className="text-4xl font-heading font-bold text-gradient-gold">Game Lobby</h1>
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <Spade className="w-5 h-5" />
+            </div>
+            <h1 className="text-4xl font-heading font-bold text-gradient-cyan">Strategy Arena</h1>
           </div>
-          <p className="text-base-content/40 text-sm">
+          <p className="text-slate-400 text-sm">
             Welcome,{" "}
-            <span className="text-primary font-semibold">{username}</span>
+            <span className="text-cyan-400 font-semibold">{username}</span>
           </p>
         </div>
 
@@ -92,7 +99,7 @@ export default function LobbyPage() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="alert alert-error mb-6 text-sm error-shake"
+              className="alert alert-error mb-6 text-sm error-shake bg-rose-500/20 border border-rose-500/40 text-rose-200"
             >
               <span>{error}</span>
             </motion.div>
@@ -105,21 +112,21 @@ export default function LobbyPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="glass-card rounded-2xl p-6"
+            className="glass-card rounded-2xl p-6 border border-slate-800"
           >
-            <h2 className="font-heading text-lg font-semibold flex items-center gap-2 mb-1">
-              <Plus className="w-5 h-5 text-primary" /> Create Lobby
+            <h2 className="font-heading text-lg font-semibold flex items-center gap-2 mb-1 text-slate-100">
+              <Plus className="w-5 h-5 text-cyan-400" /> Create Lobby
             </h2>
-            <p className="text-xs text-base-content/40 mb-5">
-              Start a new game and invite friends
+            <p className="text-xs text-slate-400 mb-5">
+              Host a new game and invite players or AI bots
             </p>
 
             <div className="w-full mb-6">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
                 Max Players
               </label>
               <select
-                className="select select-bordered w-full bg-slate-900/80 border-slate-700 text-slate-100 focus:border-amber-400"
+                className="select select-bordered w-full bg-slate-900/90 border-slate-700 text-slate-100 focus:border-cyan-400"
                 value={maxPlayers}
                 onChange={(e) => setMaxPlayers(Number(e.target.value))}
               >
@@ -136,21 +143,21 @@ export default function LobbyPage() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
-                  className="p-4 rounded-xl bg-slate-900/80 border border-slate-700 text-center mt-6"
+                  className="p-4 rounded-xl bg-slate-900/90 border border-cyan-500/30 text-center mt-6"
                 >
-                  <p className="text-xs text-slate-300 mb-2">Share this code:</p>
+                  <p className="text-xs text-slate-400 mb-2">Share this invite code:</p>
                   <div className="flex items-center justify-center gap-2 mb-3">
                     <motion.span
-                      className="text-3xl font-mono font-bold text-gradient-gold tracking-[0.3em]"
+                      className="text-3xl font-mono font-bold text-cyan-400 tracking-[0.3em]"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 }}
                     >
                       {createdCode}
                     </motion.span>
-                    <button onClick={handleCopy} className="btn btn-ghost btn-sm btn-circle text-slate-300">
+                    <button onClick={handleCopy} className="btn btn-ghost btn-sm btn-circle text-slate-300 hover:text-cyan-400">
                       {copied ? (
-                        <Check className="w-4 h-4 text-success" />
+                        <Check className="w-4 h-4 text-emerald-400" />
                       ) : (
                         <Copy className="w-4 h-4" />
                       )}
@@ -158,16 +165,16 @@ export default function LobbyPage() {
                   </div>
                   <button
                     onClick={() => handleJoin(createdCode)}
-                    className="btn btn-primary btn-sm gap-1 mt-2"
+                    className="btn btn-primary btn-sm gap-1.5 mt-2 bg-gradient-to-r from-cyan-500 to-blue-600 border-none text-white hover:from-cyan-400 hover:to-blue-500"
                   >
-                    <Sparkles className="w-3 h-3" /> Enter Lobby
+                    <Sparkles className="w-3.5 h-3.5" /> Enter Arena
                   </button>
                 </motion.div>
               ) : (
                 <motion.button
                   key="create"
                   onClick={handleCreate}
-                  className="btn btn-primary w-full mt-6 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 transition-all font-heading"
+                  className="btn btn-primary w-full mt-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 border-none text-white shadow-lg shadow-cyan-500/20 font-heading"
                   disabled={loading}
                   whileTap={{ scale: 0.97 }}
                 >
@@ -175,7 +182,7 @@ export default function LobbyPage() {
                     <span className="loading loading-spinner loading-sm" />
                   ) : (
                     <>
-                      <Plus className="w-4 h-4" /> Create Lobby
+                      <Plus className="w-4 h-4 mr-1.5" /> Create Lobby
                     </>
                   )}
                 </motion.button>
@@ -188,23 +195,23 @@ export default function LobbyPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="glass-card rounded-2xl p-6 border border-emerald-400/30"
+            className="glass-card rounded-2xl p-6 border border-slate-800"
           >
-            <h2 className="font-heading text-lg font-semibold flex items-center gap-2 mb-1 text-white">
-              <LogIn className="w-5 h-5 text-emerald-400" /> Join Lobby
+            <h2 className="font-heading text-lg font-semibold flex items-center gap-2 mb-1 text-slate-100">
+              <LogIn className="w-5 h-5 text-indigo-400" /> Join Lobby
             </h2>
-            <p className="text-xs text-slate-300/70 mb-5">
-              Enter a code to join a friend&apos;s game
+            <p className="text-xs text-slate-400 mb-5">
+              Enter an existing code to join a match
             </p>
 
             <div className="w-full mb-6">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-300/90 mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
                 Lobby Code
               </label>
               <input
                 type="text"
                 placeholder="E.G. ABCD12"
-                className="input input-bordered w-full bg-slate-900/80 border-slate-700 font-mono uppercase tracking-[0.3em] text-center text-lg text-amber-300 placeholder:text-slate-600 focus:border-emerald-400"
+                className="input input-bordered w-full bg-slate-900/90 border-slate-700 font-mono uppercase tracking-[0.3em] text-center text-lg text-cyan-300 placeholder:text-slate-600 focus:border-indigo-400"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 maxLength={6}
@@ -213,7 +220,7 @@ export default function LobbyPage() {
 
             <motion.button
               onClick={() => handleJoin(joinCode)}
-              className="btn btn-secondary w-full mt-6 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all font-heading"
+              className="btn btn-secondary w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-none text-white shadow-lg shadow-indigo-500/20 font-heading"
               disabled={loading || joinCode.length < 4}
               whileTap={{ scale: 0.97 }}
             >
@@ -221,7 +228,7 @@ export default function LobbyPage() {
                 <span className="loading loading-spinner loading-sm" />
               ) : (
                 <>
-                  <LogIn className="w-4 h-4" /> Join Game
+                  <LogIn className="w-4 h-4 mr-1.5" /> Join Match
                 </>
               )}
             </motion.button>
