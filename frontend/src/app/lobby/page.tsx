@@ -1,7 +1,7 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createLobby, joinLobby } from "@/lib/api";
 import Link from "next/link";
@@ -14,7 +14,7 @@ export default function LobbyPage() {
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
   const [createdCode, setCreatedCode] = useState("");
   const [copied, setCopied] = useState(false);
   const [username, setUsername] = useState("Player");
@@ -30,27 +30,29 @@ export default function LobbyPage() {
   }, []);
 
   const handleCreate = async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setError("");
-    setLoading(true);
     try {
       const data = await createLobby(maxPlayers);
       setCreatedCode(data.lobby.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create lobby");
     } finally {
-      setLoading(false);
+      submittingRef.current = false;
     }
   };
 
   const handleJoin = async (code: string) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setError("");
-    setLoading(true);
     try {
       await joinLobby(code);
       router.push(`/game/${code}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to join lobby");
-      setLoading(false);
+      submittingRef.current = false;
     }
   };
 
@@ -175,16 +177,9 @@ export default function LobbyPage() {
                   key="create"
                   onClick={handleCreate}
                   className="btn btn-primary w-full mt-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 border-none text-white shadow-lg shadow-cyan-500/20 font-heading"
-                  disabled={loading}
                   whileTap={{ scale: 0.97 }}
                 >
-                  {loading ? (
-                    <span className="loading loading-spinner loading-sm" />
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 mr-1.5" /> Create Lobby
-                    </>
-                  )}
+                  <Plus className="w-4 h-4 mr-1.5" /> Create Lobby
                 </motion.button>
               )}
             </AnimatePresence>
@@ -220,17 +215,11 @@ export default function LobbyPage() {
 
             <motion.button
               onClick={() => handleJoin(joinCode)}
-              className="btn btn-secondary w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-none text-white shadow-lg shadow-indigo-500/20 font-heading"
-              disabled={loading || joinCode.length < 4}
+              className="btn btn-secondary w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-none text-white shadow-lg shadow-indigo-500/20 font-heading disabled:opacity-50"
+              disabled={joinCode.length < 4}
               whileTap={{ scale: 0.97 }}
             >
-              {loading ? (
-                <span className="loading loading-spinner loading-sm" />
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4 mr-1.5" /> Join Match
-                </>
-              )}
+              <LogIn className="w-4 h-4 mr-1.5" /> Join Match
             </motion.button>
           </motion.div>
         </div>
