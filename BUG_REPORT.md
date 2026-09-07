@@ -55,8 +55,49 @@
   3. **Seamless Shared Lobbies:** Guests and registered players sit at the exact same game table and play together without distinction during matches.
   4. **Conversion Prompts:** Added a top header status indicator and a post-game banner (*"Enjoyed your match? Sign up to save your win/loss stats!"*) to convert guests to registered users without forcing them.
 
+## 7. Cross-Site WebSocket Hijacking (CSWSH) & Strict Origin Checks (Security)
+**Symptom:** The WebSocket upgrader was configured with `CheckOrigin: func(r *http.Request) bool { return true }`, exposing the application to Cross-Site WebSocket Hijacking (CSWSH) where malicious third-party websites could silently open sockets to join games on behalf of logged-in players.
+**Root Cause:** Permissive development-time origin defaults were never replaced with an allowlist validator.
+**Resolution:** 
+- Built an `isAllowedOrigin` verification function in `backend/internal/ws/handler.go` that inspects the HTTP `Origin` header.
+- Restricted connections to approved hostnames (`localhost:3000`, `127.0.0.1:3000`, `localhost:8080`, and the production `FRONTEND_URL` environment variable), rejecting untrusted origins with an HTTP 403 Forbidden.
+
+## 8. The Go Channel Double-Close Panic Race Condition (Concurrency & Reliability)
+**Symptom:** Under unstable network connections or rapid player disconnects, the Go backend service would intermittently crash with a fatal runtime error: `panic: close of closed channel`.
+**Root Cause:** In `backend/internal/ws/hub.go`, `client.Send` was closed during unregistration. If a concurrent broadcast operation encountered a write error or blocked channel on the same client, it would attempt to close `client.Send` a second time, triggering Go's fatal double-channel-close panic.
+**Resolution:** 
+- Thread-safely encapsulated channel teardown inside a `CloseSend()` method on the `Client` struct using Go's `sync.Once`.
+- Guaranteed that `close(c.Send)` can only ever be executed exactly once, regardless of whether a disconnection or a broadcast write failure triggers the cleanup first.
+
+## 9. Predictable Guest IDs & Input Buffer Memory Exhaustion DoS (Security & Defense)
+**Symptom:** Guest user IDs were generated using predictable timestamps (`time.Now().UnixNano()`), making user session IDs guessable. Furthermore, JSON endpoints lacked payload size limits, creating a Denial of Service (DoS) memory exhaustion vulnerability.
+**Root Cause:** Sequential system clocks are non-cryptographic, and standard `json.NewDecoder(r.Body)` reads unbounded input streams into heap memory.
+**Resolution:** 
+- Replaced timestamp IDs with cryptographically secure negative random integers using Go's `crypto/rand` package.
+- Wrapped JSON request body reading in `backend/internal/auth/handler.go` and `lobby/handler.go` with `http.MaxBytesReader(w, r.Body, 1048576)` (1 MB hard cap).
+- Enforced strict alphanumeric bounds and length validations on usernames (2–20 chars) and passwords (6–72 chars).
+
+## 10. Intelligent Heuristic Bot AI Engine Without "AI Slop" (Game AI Architecture)
+**Challenge:** Solo players and small groups needed intelligent, competitive bot opponents to fill tables. Relying on external LLM APIs ("AI slop") would introduce unacceptable latency (1–3s per turn), recurring API costs, and non-deterministic invalid moves.
+**Design & Mechanics:**
+- **Predictive Bidding Heuristics:** Designed `CalculateBid` in `backend/internal/game/ai.go` to compute expected tricks by evaluating high-card honor values (Aces, Kings, Queens), side-suit singletons/voids, and trump suit volume. Supports distinct bot personas: **Atlas** (conservative), **Nova** (aggressive), and **Sage** (balanced).
+- **Rule-Bound Tactical Card Play:** Designed `ChooseCardToPlay` to strictly isolate legal moves (`getLegalCards`). When a bot needs tricks, it leads control cards or ruffs with lowest winning trumps. When its bid quota is met, it ducks tricks and sloughs off dangerous high cards to prevent breaking its forecast.
+- **Natural Deliberation:** Integrated an asynchronous 800ms human-like thinking delay into `hub.go` using goroutine timers so bot turns feel responsive yet natural rather than robotic or instant.
+
+## 11. Eradicating Casino/Gambling Aesthetics in Favor of a Tactical Arena (UI/UX)
+**Symptom:** The game looked and felt like a tacky online gambling site due to dark emerald felt (`#091410`, `#1b5e20`), heavy 12px brown wood borders (`.casino-table`), roulette-style elements, and DaisyUI's `luxury` theme.
+**Root Cause:** Early prototypes borrowed traditional poker/casino design tropes rather than styling Judgement as a modern competitive card strategy game.
+**Resolution:** 
+- Replaced green felt and wooden borders with a modern **Dark Obsidian & Cyan Tactical Arena** design system (`globals.css`, `ParticleBackground.tsx`).
+- Engineered `.card-arena` featuring deep slate radial lighting (`#151d2f` -> `#0c121e` -> `#070a12`), subtle tabletop dot-matrix texture, and crisp border lighting.
+- Redesigned playing cards with high-contrast faces, smooth 3D hover elevation, and a clean crown indicator for active trump cards.
+- Modernized all companion pages (Lobby, Rules, Login, Register, About) into cohesive glassmorphic tactical command screens.
+
 ---
 
-### 💡 Interview Tip:
-If an interviewer asks *"What was the most challenging bug you faced?"*, talk about **Bug #3 (The Cumulative Scoring Bug)**. It shows that you understand how in-memory state management works in Go, how pointers and maps behave, and how WebSocket event loops manage state transitions!
+### 💡 Interview Tips:
+- **For Backend & Concurrency:** Talk about **Bug #8 (The Channel Double-Close Panic)**. Explaining how `sync.Once` prevents race condition crashes across concurrent goroutines (`readPump`, `writePump`, and `hub.broadcast`) demonstrates real-world Go systems mastery.
+- **For Security & Architecture:** Talk about **Bug #7 (CSWSH & Origin Validation)** and **Bug #9 (Memory Exhaustion DoS)**. Discussing why WebSockets require strict origin checks and how `http.MaxBytesReader` prevents memory exhaustion shows deep production readiness.
+- **For Game & Product Engineering:** Discuss **Challenge #10 (Heuristic Bot AI)**. Explaining why a deterministic, rule-bound heuristic state engine was chosen over latency-heavy LLMs shows practical product thinking and algorithmic discipline.
+
 
