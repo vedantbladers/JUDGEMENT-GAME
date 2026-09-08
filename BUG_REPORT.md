@@ -93,11 +93,25 @@
 - Redesigned playing cards with high-contrast faces, smooth 3D hover elevation, and a clean crown indicator for active trump cards.
 - Modernized all companion pages (Lobby, Rules, Login, Register, About) into cohesive glassmorphic tactical command screens.
 
+## 12. Lobby Capacity & Bot Range Enforcement Bug (Game Logic / WebSocket / UI)
+**Symptom:** When a host created a match configured for 2 or 3 players, the lobby waiting room still permitted adding up to 4 bots, resulting in matches exceeding the host's selected player limit and causing game state imbalances.
+**Root Cause:** 
+- **Backend Hub Hardcoded Limit:** In `backend/internal/ws/hub.go`, the `EventAddBot` handler hardcoded `currentCount >= 4`, ignoring the lobby's `MaxPlayers` setting configured during lobby creation in PostgreSQL. Furthermore, `currentCount` counted raw WebSocket connections instead of unique player IDs.
+- **Missing State Propagation:** The `GameState` struct in `backend/internal/game/state.go` and `frontend/src/lib/types.ts` did not track `max_players`, leaving the client without knowledge of the room's maximum capacity.
+- **Frontend UI Assumptions:** In `frontend/src/app/game/[lobbyId]/page.tsx`, the "Add AI Bot" button visibility was hardcoded to `gameState.players.length < 4`, and the waiting room header displayed a fixed `(2 to 4 needed)`.
+**Resolution:** 
+- Added `MaxPlayers` to the Go `GameState` struct and Next.js TypeScript interface, propagating room capacity via WebSocket `STATE_UPDATE`.
+- Implemented `getMaxPlayers(lobbyID)` in the WebSocket `Hub` to fetch and cache lobby capacity directly from the database `lobbies` table.
+- Enforced strict capacity bounds in `EventAddBot` using `len(uniqueUsers) + len(activeBots) >= maxPlayers`.
+- Updated the frontend waiting room to dynamically hide "Add AI Bot" once the room reaches configured capacity (`gameState.players.length < maxPlayers`), display adaptive room status prompts (`2 needed` for 2 players, `2 to 3 needed` for 3 players, `2 to 4 needed` for 4 players), and dynamically clamp `cardsPerPlayer` options.
+
 ---
 
 ### 💡 Interview Tips:
 - **For Backend & Concurrency:** Talk about **Bug #8 (The Channel Double-Close Panic)**. Explaining how `sync.Once` prevents race condition crashes across concurrent goroutines (`readPump`, `writePump`, and `hub.broadcast`) demonstrates real-world Go systems mastery.
 - **For Security & Architecture:** Talk about **Bug #7 (CSWSH & Origin Validation)** and **Bug #9 (Memory Exhaustion DoS)**. Discussing why WebSockets require strict origin checks and how `http.MaxBytesReader` prevents memory exhaustion shows deep production readiness.
 - **For Game & Product Engineering:** Discuss **Challenge #10 (Heuristic Bot AI)**. Explaining why a deterministic, rule-bound heuristic state engine was chosen over latency-heavy LLMs shows practical product thinking and algorithmic discipline.
+- **For Real-Time State Synchronization & Distributed Validation:** Talk about **Bug #12 (Lobby Capacity & Dynamic Bot Enforcement)**. Discussing why database persistence models (`MaxPlayers` on `Lobby`) must be coupled with in-memory WebSocket event handlers and broadcast state structs ensures multi-tiered boundary enforcement across both server and client.
+
 
 
