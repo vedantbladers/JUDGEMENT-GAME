@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -15,6 +16,17 @@ type UsernameKey string
 
 const ContextUserIDKey UserIDKey = "userID"
 const ContextUsernameKey UsernameKey = "username"
+
+func sendAuthError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": false,
+		"error": map[string]string{
+			"message": message,
+		},
+	})
+}
 
 // AuthMiddleware validates JWT tokens and injects the user ID into the context
 func AuthMiddleware(secret string) func(http.Handler) http.Handler {
@@ -32,13 +44,13 @@ func AuthMiddleware(secret string) func(http.Handler) http.Handler {
 			}
 
 			if authHeader == "" {
-				http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+				sendAuthError(w, http.StatusUnauthorized, "Authorization header missing")
 				return
 			}
 
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				http.Error(w, "Invalid authorization format", http.StatusUnauthorized)
+				sendAuthError(w, http.StatusUnauthorized, "Invalid authorization format")
 				return
 			}
 			tokenString := parts[1]
@@ -52,20 +64,20 @@ func AuthMiddleware(secret string) func(http.Handler) http.Handler {
 			})
 
 			if err != nil || !token.Valid {
-				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+				sendAuthError(w, http.StatusUnauthorized, "Invalid or expired token")
 				return
 			}
 
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok {
-				http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+				sendAuthError(w, http.StatusUnauthorized, "Invalid token claims")
 				return
 			}
 
 			// In jwt.MapClaims, numeric values are parsed as float64
 			userIDFloat, ok := claims["user_id"].(float64)
 			if !ok {
-				http.Error(w, "Invalid user ID in token", http.StatusUnauthorized)
+				sendAuthError(w, http.StatusUnauthorized, "Invalid user ID in token")
 				return
 			}
 
