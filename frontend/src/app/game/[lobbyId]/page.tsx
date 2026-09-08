@@ -87,15 +87,6 @@ export default function GamePage() {
     };
   }, [lobbyId, handleStateUpdate, handleError, isReady]);
 
-  useEffect(() => {
-    if (gameState?.phase === "finished") {
-      const timer = setTimeout(() => {
-        setUserSelectedCards(null);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [gameState?.phase]);
-
   const TRUMP_SEQUENCE: Suit[] = ["HEARTS", "SPADES", "DIAMONDS", "CLUBS"];
   const nextTrumpSuit: Suit =
     !gameState || !gameState.trump_suit
@@ -104,10 +95,15 @@ export default function GamePage() {
 
   const handleStartGame = () => {
     if (!wsRef.current) return;
+    const cardsToStart =
+      gameState && gameState.phase === "finished" && gameState.cards_per_player > 0
+        ? Math.max(1, gameState.cards_per_player - 1)
+        : cardsPerPlayer;
+
     sendEvent(wsRef.current, {
       type: "START_GAME",
       payload: {
-        cards_per_player: cardsPerPlayer,
+        cards_per_player: cardsToStart,
         trump_suit: nextTrumpSuit,
       },
     });
@@ -196,6 +192,11 @@ export default function GamePage() {
     userSelectedCards !== null
       ? Math.min(userSelectedCards, maxPossibleCards)
       : maxPossibleCards;
+
+  const nextRoundCards =
+    gameState && gameState.phase === "finished" && gameState.cards_per_player > 0
+      ? Math.max(1, gameState.cards_per_player - 1)
+      : cardsPerPlayer;
 
   const isHost = gameState?.host_id === userId || !gameState?.host_id;
 
@@ -766,7 +767,7 @@ export default function GamePage() {
                     onClick={handleStartGame}
                     className="btn bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold btn-lg w-full rounded-xl shadow-lg shadow-cyan-500/20 border-none flex items-center justify-center gap-2"
                   >
-                    <Play className="w-5 h-5 fill-slate-950" /> Play Next Round ({getSuitSymbol(nextTrumpSuit)} {nextTrumpSuit})
+                    <Play className="w-5 h-5 fill-slate-950" /> Play Next Round ({nextRoundCards} {nextRoundCards === 1 ? "Card" : "Cards"} · {getSuitSymbol(nextTrumpSuit)} {nextTrumpSuit})
                   </button>
                 ) : (
                   <p className="text-sm text-slate-400 mt-4">Waiting for table host to start next round...</p>
