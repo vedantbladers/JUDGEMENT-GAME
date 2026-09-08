@@ -82,6 +82,9 @@ h1, h2, h3, h4, h5, h6,
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: inline-block;
+  padding-bottom: 0.15em;
+  line-height: 1.2;
 }
 
 .text-gradient-hero {
@@ -90,8 +93,8 @@ h1, h2, h3, h4, h5, h6,
   -webkit-text-fill-color: transparent;
   background-clip: text;
   display: inline-block;
-  padding-bottom: 0.12em;
-  line-height: 1.15;
+  padding-bottom: 0.15em;
+  line-height: 1.2;
 }
 
 .text-gradient-cyan {
@@ -99,6 +102,9 @@ h1, h2, h3, h4, h5, h6,
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: inline-block;
+  padding-bottom: 0.15em;
+  line-height: 1.2;
 }
 
 .text-gradient-amber {
@@ -106,6 +112,9 @@ h1, h2, h3, h4, h5, h6,
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: inline-block;
+  padding-bottom: 0.15em;
+  line-height: 1.2;
 }
 
 /* ============================================ */
