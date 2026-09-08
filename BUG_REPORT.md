@@ -138,6 +138,18 @@
 - Conditioned the button styling so the vibrant glowing gradient and active shadow only engage when all 6 characters are entered; otherwise, the button renders as an unlit, muted slate surface (`bg-slate-800 text-slate-500 shadow-none cursor-not-allowed`).
 - Added an interactive `x/6` character counter that illuminates cyan upon reaching 6 characters, plus Enter key support to instantly join once the code is complete.
 
+## 16. Subsequent Rounds Resetting to Maximum Cards Rather Than Decrementing (Game Loop)
+**Symptom:** When starting a match with a custom card count selected from the dropdown (e.g., 2 cards in a 2-player lobby), completing the first round and clicking "Play Next Round" resulted in Round 2 dealing the maximum card count (26 cards) instead of decrementing by 1 (to 1 card).
+**Root Cause:** 
+- **Accidental State Purge in Phase Finished Effect:** In `frontend/src/app/game/[lobbyId]/page.tsx`, an `useEffect` triggered on `gameState?.phase === "finished"` executed `setUserSelectedCards(null)`. Because `cardsPerPlayer` was computed to fallback to `maxPossibleCards` whenever `userSelectedCards === null`, ending Round 1 immediately recalculated `cardsPerPlayer` back to 26 cards.
+- **Unconditioned Round Launch Payload:** When the host clicked "Play Next Round", `handleStartGame` sent `{ cards_per_player: cardsPerPlayer }` without checking if a previous round had completed, transmitting the reset max card count to the server.
+- **Server-Side Passthrough:** In `backend/internal/ws/hub.go`, `EventStartGame` received `payload.CardsPerPlayer` and passed it directly to `g.StartRound()` without verifying that consecutive rounds in Judgement must always decrease by 1 (`g.CardsPerPlayer - 1`).
+**Resolution:** 
+- Removed the harmful `setUserSelectedCards(null)` effect from `frontend/src/app/game/[lobbyId]/page.tsx`.
+- Updated `handleStartGame` and button rendering to compute `nextRoundCards`: if `gameState?.phase === "finished"`, it uses `Math.max(1, gameState.cards_per_player - 1)`; otherwise, it uses the host's dropdown selection `cardsPerPlayer`.
+- Enhanced the "Play Next Round" action button to dynamically indicate the exact card count for the upcoming round: `Play Next Round (X Cards · Suit)`.
+- Added server-side enforcement in `backend/internal/ws/hub.go` ensuring that if `g.Phase == "finished"` and `g.CardsPerPlayer > 1`, `cardsToDeal` is guaranteed to decrement to `g.CardsPerPlayer - 1`.
+
 ---
 
 ### 💡 Interview Tips:
