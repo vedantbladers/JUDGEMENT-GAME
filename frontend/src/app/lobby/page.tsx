@@ -178,7 +178,7 @@ export default function LobbyPage() {
                   </div>
                   <button
                     onClick={() => handleJoin(createdCode)}
-                    className="btn btn-primary btn-sm gap-1.5 mt-2 bg-gradient-to-r from-cyan-500 to-blue-600 border-none text-white hover:from-cyan-400 hover:to-blue-500"
+                    className="btn btn-primary btn-sm gap-1.5 mt-2 bg-linear-to-r from-cyan-500 to-blue-600 border-none text-white hover:from-cyan-400 hover:to-blue-500"
                   >
                     <Sparkles className="w-3.5 h-3.5" /> Enter Arena
                   </button>
@@ -187,7 +187,7 @@ export default function LobbyPage() {
                 <motion.button
                   key="create"
                   onClick={handleCreate}
-                  className="btn btn-primary w-full mt-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 border-none text-white shadow-lg shadow-cyan-500/20 font-heading"
+                  className="btn btn-primary w-full mt-6 bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 border-none text-white shadow-lg shadow-cyan-500/20 font-heading"
                   whileTap={{ scale: 0.97 }}
                 >
                   <Plus className="w-4 h-4 mr-1.5" /> Create Lobby
@@ -237,11 +237,10 @@ export default function LobbyPage() {
 
             <motion.button
               onClick={() => handleJoin(joinCode)}
-              className={`btn w-full mt-4 font-heading border-none text-white transition-all duration-300 flex items-center justify-center gap-1.5 ${
-                joinCode.trim().length === 6
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/30 cursor-pointer"
+              className={`btn w-full mt-4 font-heading border-none text-white transition-all duration-300 flex items-center justify-center gap-1.5 ${joinCode.trim().length === 6
+                  ? "bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/30 cursor-pointer"
                   : "bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed opacity-50 shadow-none hover:bg-slate-800"
-              }`}
+                }`}
               disabled={joinCode.trim().length !== 6}
               whileTap={joinCode.trim().length === 6 ? { scale: 0.97 } : undefined}
             >
