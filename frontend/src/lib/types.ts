@@ -30,6 +30,7 @@ export interface GameState {
   last_trick: Play[];
   last_trick_winner: number;
   host_id: number;
+  max_players?: number;
   phase: "waiting" | "bidding" | "playing" | "finished" | "gameOver";
 }
 

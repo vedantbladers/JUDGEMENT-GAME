@@ -15,6 +15,7 @@ type GameState struct {
 	PlayerNames  map[int]string    `json:"player_names"` // UserID -> Username
 	HostID       int               `json:"host_id"`      // The creator of the lobby
 	Scores       map[int]int       `json:"scores"`
+	MaxPlayers   int               `json:"max_players"`
 	
 	// Current Round State
 	CardsPerPlayer int            `json:"cards_per_player"`
@@ -46,6 +47,7 @@ func NewGame(lobbyID string, playerIDs []int) *GameState {
 		Bids:        make(map[int]int),
 		TricksWon:   make(map[int]int),
 		Phase:       "waiting",
+		MaxPlayers:  4,
 	}
 }
 
