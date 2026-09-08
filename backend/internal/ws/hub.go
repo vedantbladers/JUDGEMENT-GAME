@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -27,6 +28,9 @@ type Hub struct {
 	// LobbyBots tracks bot users per LobbyID (BotID -> BotName)
 	LobbyBots map[string]map[int]string
 
+	// LobbyMaxPlayers tracks the max players limit per LobbyID
+	LobbyMaxPlayers map[string]int
+
 	// Inbound messages from the clients.
 	Actions chan Action
 
@@ -40,15 +44,36 @@ type Hub struct {
 // NewHub creates a new Hub instance
 func NewHub(db *gorm.DB) *Hub {
 	return &Hub{
-		db:         db,
-		Actions:    make(chan Action),
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Lobbies:    make(map[string]map[*Client]bool),
-		Games:      make(map[string]*game.GameState),
-		LobbyHosts: make(map[string]int),
-		LobbyBots:  make(map[string]map[int]string),
+		db:              db,
+		Actions:         make(chan Action),
+		Register:        make(chan *Client),
+		Unregister:      make(chan *Client),
+		Lobbies:         make(map[string]map[*Client]bool),
+		Games:           make(map[string]*game.GameState),
+		LobbyHosts:      make(map[string]int),
+		LobbyBots:       make(map[string]map[int]string),
+		LobbyMaxPlayers: make(map[string]int),
 	}
+}
+
+// getMaxPlayers retrieves the maximum player capacity for a lobby, querying DB if necessary
+func (h *Hub) getMaxPlayers(lobbyID string) int {
+	if h.LobbyMaxPlayers != nil {
+		if max, exists := h.LobbyMaxPlayers[lobbyID]; exists && max >= 2 && max <= 4 {
+			return max
+		}
+	}
+	if h.db != nil {
+		var lob models.Lobby
+		if err := h.db.Select("max_players").Where("id = ?", lobbyID).First(&lob).Error; err == nil && lob.MaxPlayers >= 2 && lob.MaxPlayers <= 4 {
+			if h.LobbyMaxPlayers == nil {
+				h.LobbyMaxPlayers = make(map[string]int)
+			}
+			h.LobbyMaxPlayers[lobbyID] = lob.MaxPlayers
+			return lob.MaxPlayers
+		}
+	}
+	return 4
 }
 
 // Run starts the hub's main event loop
@@ -60,6 +85,7 @@ func (h *Hub) Run() {
 				h.Lobbies[client.LobbyID] = make(map[*Client]bool)
 				// The first person to join the lobby becomes the host
 				h.LobbyHosts[client.LobbyID] = client.UserID
+				h.getMaxPlayers(client.LobbyID)
 			}
 			h.Lobbies[client.LobbyID][client] = true
 
@@ -89,6 +115,7 @@ func (h *Hub) Run() {
 					delete(h.Games, client.LobbyID)
 					delete(h.LobbyHosts, client.LobbyID)
 					delete(h.LobbyBots, client.LobbyID)
+					delete(h.LobbyMaxPlayers, client.LobbyID)
 				} else {
 					// Handle Host reassignment if the host left
 					if h.LobbyHosts[client.LobbyID] == client.UserID {
@@ -142,9 +169,14 @@ func (h *Hub) handleAction(action Action) {
 			h.LobbyBots[lobbyID] = make(map[int]string)
 		}
 
-		currentCount := len(h.Lobbies[lobbyID]) + len(h.LobbyBots[lobbyID])
-		if currentCount >= 4 {
-			h.sendError(action.Client, "Lobby is full (maximum 4 players)")
+		maxPlayers := h.getMaxPlayers(lobbyID)
+		uniqueUsers := make(map[int]bool)
+		for c := range h.Lobbies[lobbyID] {
+			uniqueUsers[c.UserID] = true
+		}
+		currentCount := len(uniqueUsers) + len(h.LobbyBots[lobbyID])
+		if currentCount >= maxPlayers {
+			h.sendError(action.Client, fmt.Sprintf("Lobby is full (maximum %d players)", maxPlayers))
 			return
 		}
 
@@ -211,8 +243,13 @@ func (h *Hub) handleAction(action Action) {
 			}
 		}
 
+		maxPlayers := h.getMaxPlayers(lobbyID)
 		if len(playerIDs) < 2 {
 			h.sendError(action.Client, "Not enough players to start (need at least 2 players or bots)")
+			return
+		}
+		if len(playerIDs) > maxPlayers {
+			h.sendError(action.Client, fmt.Sprintf("Too many players to start (maximum %d players)", maxPlayers))
 			return
 		}
 
@@ -221,9 +258,13 @@ func (h *Hub) handleAction(action Action) {
 		if !ok {
 			g = game.NewGame(lobbyID, playerIDs)
 			g.HostID = h.LobbyHosts[lobbyID]
+			g.MaxPlayers = maxPlayers
 		} else {
 			// Ensure player list is up to date for the new round
 			g.Players = playerIDs
+			if g.MaxPlayers == 0 {
+				g.MaxPlayers = maxPlayers
+			}
 		}
 
 		// Populate player names from connected clients and bots
@@ -483,7 +524,12 @@ func (h *Hub) broadcastGameState(lobbyID string) {
 		}
 		g = game.NewGame(lobbyID, playerIDs)
 		g.HostID = h.LobbyHosts[lobbyID]
+		g.MaxPlayers = h.getMaxPlayers(lobbyID)
 		// We DO NOT save this to h.Games yet, it's just a temporary state for the UI
+	} else {
+		if g.MaxPlayers == 0 {
+			g.MaxPlayers = h.getMaxPlayers(lobbyID)
+		}
 	}
 
 	// Always populate player names from connected clients and bots
