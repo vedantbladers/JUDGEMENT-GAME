@@ -292,7 +292,12 @@ func (h *Hub) handleAction(action Action) {
 		}
 
 		cardsToDeal := payload.CardsPerPlayer
-		if cardsToDeal <= 0 && len(g.Players) > 0 {
+		if g.Phase == "finished" && g.CardsPerPlayer > 1 {
+			// In Judgement, subsequent rounds always decrement cards by 1 from the previous round
+			cardsToDeal = g.CardsPerPlayer - 1
+		} else if cardsToDeal <= 0 && len(g.Players) > 0 {
+			cardsToDeal = 52 / len(g.Players)
+		} else if len(g.Players) > 0 && cardsToDeal > (52/len(g.Players)) {
 			cardsToDeal = 52 / len(g.Players)
 		}
 
