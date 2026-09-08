@@ -21,13 +21,19 @@ export default function LobbyPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      const token = localStorage.getItem("jwt_token");
+      const userId = localStorage.getItem("user_id");
+      if (!token || !userId) {
+        router.replace("/login");
+        return;
+      }
       const saved = localStorage.getItem("username");
       if (saved) {
         setUsername(saved);
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   const handleCreate = async () => {
     if (submittingRef.current) return;

@@ -1,11 +1,10 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
-// Generic fetch wrapper that auto-injects the JWT token
 async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = localStorage.getItem("jwt_token");
+  const token = typeof window !== "undefined" ? localStorage.getItem("jwt_token") : null;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -21,9 +20,33 @@ async function apiFetch<T>(
     headers,
   });
 
-  const data = await res.json();
+  let data: any = null;
+  const contentType = res.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+  } else {
+    try {
+      const text = await res.text();
+      data = { error: { message: text.trim() } };
+    } catch {
+      data = null;
+    }
+  }
 
   if (!res.ok) {
+    if (res.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("jwt_token");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("username");
+        localStorage.removeItem("is_guest");
+      }
+      throw new Error(data?.error?.message || "Session expired. Please log in again.");
+    }
     throw new Error(data?.error?.message || "Something went wrong");
   }
 
