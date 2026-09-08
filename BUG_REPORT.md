@@ -105,6 +105,17 @@
 - Enforced strict capacity bounds in `EventAddBot` using `len(uniqueUsers) + len(activeBots) >= maxPlayers`.
 - Updated the frontend waiting room to dynamically hide "Add AI Bot" once the room reaches configured capacity (`gameState.players.length < maxPlayers`), display adaptive room status prompts (`2 needed` for 2 players, `2 to 3 needed` for 3 players, `2 to 4 needed` for 4 players), and dynamically clamp `cardsPerPlayer` options.
 
+## 13. Plaintext 401 & Unhandled Token Expiry SyntaxError (API & Auth Resilience)
+**Symptom:** When attempting to create or join a lobby after leaving the application idle or following a server restart, the UI threw an unhandled crash error: `Unexpected token 'I', "Invalid or"... is not valid JSON`.
+**Root Cause:** 
+- **Content-Type Mismatch in Middleware:** In `backend/internal/middleware/auth.go`, token validation failures were handled using Go's built-in `http.Error(w, "Invalid or expired token", http.StatusUnauthorized)`. This writes a `text/plain` body rather than the structured JSON (`{"success": false, "error": {"message": "..."}}`) expected by client consumers.
+- **Unchecked JSON Parsing in Fetch Client:** In `frontend/src/lib/api.ts`, `apiFetch` unconditionally called `await res.json()` without checking `res.headers.get("content-type")` or guarding against non-2xx plaintext responses. When `res.json()` attempted to parse the plaintext `"Invalid or expired token\n"`, it threw a `SyntaxError: Unexpected token 'I'`.
+- **Missing Session Invalidation / Redirect:** Neither `apiFetch` nor `/lobby/page.tsx` purged expired tokens or redirected unauthenticated users to `/login`, causing persistent failures until local storage was manually cleared.
+**Resolution:** 
+- Standardized `backend/internal/middleware/auth.go` to return formatted JSON errors matching the rest of the REST API (`sendAuthError(w, status, message)`).
+- Hardened `apiFetch` in `frontend/src/lib/api.ts` to inspect the response `Content-Type`, gracefully fallback to raw text parsing, and automatically wipe invalid/expired credentials from `localStorage` upon receiving HTTP 401.
+- Added mount authentication guards to `/lobby/page.tsx` to automatically route expired or unauthenticated sessions to `/login`.
+
 ---
 
 ### 💡 Interview Tips:
@@ -112,6 +123,8 @@
 - **For Security & Architecture:** Talk about **Bug #7 (CSWSH & Origin Validation)** and **Bug #9 (Memory Exhaustion DoS)**. Discussing why WebSockets require strict origin checks and how `http.MaxBytesReader` prevents memory exhaustion shows deep production readiness.
 - **For Game & Product Engineering:** Discuss **Challenge #10 (Heuristic Bot AI)**. Explaining why a deterministic, rule-bound heuristic state engine was chosen over latency-heavy LLMs shows practical product thinking and algorithmic discipline.
 - **For Real-Time State Synchronization & Distributed Validation:** Talk about **Bug #12 (Lobby Capacity & Dynamic Bot Enforcement)**. Discussing why database persistence models (`MaxPlayers` on `Lobby`) must be coupled with in-memory WebSocket event handlers and broadcast state structs ensures multi-tiered boundary enforcement across both server and client.
+- **For API Design & Error Contracts:** Talk about **Bug #13 (Plaintext 401 & Strict Error Contracts)**. Discussing why middleware layers must strictly adhere to the API's JSON response contract—and how defensive fetch wrappers handle non-JSON edge cases and lifecycle invalidation—shows attention to operational stability and clean UX.
+
 
 
 
