@@ -116,6 +116,17 @@
 - Hardened `apiFetch` in `frontend/src/lib/api.ts` to inspect the response `Content-Type`, gracefully fallback to raw text parsing, and automatically wipe invalid/expired credentials from `localStorage` upon receiving HTTP 401.
 - Added mount authentication guards to `/lobby/page.tsx` to automatically route expired or unauthenticated sessions to `/login`.
 
+## 14. Font Descender Clipping (CSS Background-Clip) & Lost Navigation on Scroll (UI/UX)
+**Symptom:** 
+- In headings styled with gradient text (such as *"Origins & Strategy"* on `/about`, *"Strategy Arena"* on `/lobby`, and *"Player Login"* on `/login`), letters with descenders (`g`, `y`, `p`, `q`, `j`) had their lower loops cut off horizontally.
+- On informational and long-form pages (`/about`, `/rules`), scrolling down the page scrolled the "Back to Home" button off-screen, requiring users to scroll all the way back up to return home.
+**Root Cause:** 
+- **WebKit Text Clip Bounding Box:** Applying `-webkit-background-clip: text` and `-webkit-text-fill-color: transparent` computes the gradient bounding box strictly to the element's line box. Without explicit `display: inline-block`, `line-height`, and bottom padding, glyph descenders that extend below the typographic baseline are cropped out by the background boundary.
+- **Static Navigation & Parent Overflow Interference:** The navigation bars were configured with static `relative` positioning. Furthermore, parent page wrappers were declared with `overflow: hidden`, which would prevent standard `position: sticky` from functioning even if applied.
+**Resolution:** 
+- Enforced `display: inline-block; padding-bottom: 0.15em; line-height: 1.2;` across all global text gradient utility classes (`.text-gradient`, `.text-gradient-cyan`, `.text-gradient-amber`) in `globals.css`, ensuring descenders render cleanly without clipping.
+- Upgraded the navigation bars in `/about/page.tsx` and `/rules/page.tsx` into sticky, frosted-glass headers (`sticky top-0 z-40 bg-[#070a0f]/80 backdrop-blur-md border-b border-slate-800/60`), and switched parent containers to `overflow-x-clip` so the "Back to Home" control remains accessible during deep page scrolling across both desktop and mobile layouts.
+
 ---
 
 ### 💡 Interview Tips:
@@ -124,7 +135,4 @@
 - **For Game & Product Engineering:** Discuss **Challenge #10 (Heuristic Bot AI)**. Explaining why a deterministic, rule-bound heuristic state engine was chosen over latency-heavy LLMs shows practical product thinking and algorithmic discipline.
 - **For Real-Time State Synchronization & Distributed Validation:** Talk about **Bug #12 (Lobby Capacity & Dynamic Bot Enforcement)**. Discussing why database persistence models (`MaxPlayers` on `Lobby`) must be coupled with in-memory WebSocket event handlers and broadcast state structs ensures multi-tiered boundary enforcement across both server and client.
 - **For API Design & Error Contracts:** Talk about **Bug #13 (Plaintext 401 & Strict Error Contracts)**. Discussing why middleware layers must strictly adhere to the API's JSON response contract—and how defensive fetch wrappers handle non-JSON edge cases and lifecycle invalidation—shows attention to operational stability and clean UX.
-
-
-
-
+- **For Frontend Craft & Modern CSS:** Talk about **Bug #14 (Font Descender Clipping & Sticky Contexts)**. Explaining how `-webkit-background-clip: text` clips font descenders when lacking baseline padding, and how parent `overflow: hidden` breaks CSS `position: sticky`, highlights an eye for visual polish and deep layout engine understanding.
