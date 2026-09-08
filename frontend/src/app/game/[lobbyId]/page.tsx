@@ -34,7 +34,7 @@ export default function GamePage() {
   const [error, setError] = useState("");
   const [connected, setConnected] = useState(false);
   const [bidInput, setBidInput] = useState(0);
-  const [cardsPerPlayer, setCardsPerPlayer] = useState(5);
+  const [userSelectedCards, setUserSelectedCards] = useState<number | null>(null);
   const [playerLeftAlert, setPlayerLeftAlert] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
   const router = useRouter();
@@ -90,7 +90,7 @@ export default function GamePage() {
   useEffect(() => {
     if (gameState?.phase === "finished") {
       const timer = setTimeout(() => {
-        setCardsPerPlayer((prev) => Math.max(1, prev - 1));
+        setUserSelectedCards(null);
       }, 0);
       return () => clearTimeout(timer);
     }
@@ -180,23 +180,22 @@ export default function GamePage() {
   const maxPlayers = gameState?.max_players || 4;
 
   // Calculate maximum possible cards based on player count (52 cards in a deck)
-  const maxPossibleCards =
+  // 2 players: 26 cards, 3 players: 17 cards, 4 players: 13 cards
+  const effectivePlayerCount =
     gameState && gameState.players.length >= 2
-      ? Math.floor(52 / gameState.players.length)
-      : Math.floor(52 / maxPlayers);
+      ? gameState.players.length
+      : maxPlayers;
+
+  const maxPossibleCards = Math.floor(52 / effectivePlayerCount);
 
   // Generate array [1, 2, ..., maxPossibleCards]
   const cardOptions = Array.from({ length: maxPossibleCards }, (_, i) => i + 1);
 
-  // Clamp cardsPerPlayer if it exceeds maxPossibleCards
-  useEffect(() => {
-    if (cardsPerPlayer > maxPossibleCards) {
-      const timer = setTimeout(() => {
-        setCardsPerPlayer(maxPossibleCards);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [maxPossibleCards, cardsPerPlayer]);
+  // Default to maximum possible cards (2p: 26, 3p: 17, 4p: 13) unless explicitly selected by player
+  const cardsPerPlayer =
+    userSelectedCards !== null
+      ? Math.min(userSelectedCards, maxPossibleCards)
+      : maxPossibleCards;
 
   const isHost = gameState?.host_id === userId || !gameState?.host_id;
 
@@ -395,12 +394,12 @@ export default function GamePage() {
                     className="select select-bordered select-sm w-full bg-slate-900 border-slate-700 text-slate-100 focus:border-cyan-400"
                     value={cardsPerPlayer}
                     onChange={(e) =>
-                      setCardsPerPlayer(Number(e.target.value))
+                      setUserSelectedCards(Number(e.target.value))
                     }
                   >
                     {cardOptions.map((n) => (
                       <option key={n} value={n}>
-                        {n} Cards
+                        {n} Cards {n === maxPossibleCards ? "(Max - Default)" : ""}
                       </option>
                     ))}
                   </select>
