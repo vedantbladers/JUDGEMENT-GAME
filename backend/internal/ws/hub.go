@@ -291,7 +291,12 @@ func (h *Hub) handleAction(action Action) {
 			selectedTrump = payload.TrumpSuit
 		}
 
-		if err := g.StartRound(payload.CardsPerPlayer, selectedTrump); err != nil {
+		cardsToDeal := payload.CardsPerPlayer
+		if cardsToDeal <= 0 && len(g.Players) > 0 {
+			cardsToDeal = 52 / len(g.Players)
+		}
+
+		if err := g.StartRound(cardsToDeal, selectedTrump); err != nil {
 			h.sendError(action.Client, err.Error())
 			return
 		}
