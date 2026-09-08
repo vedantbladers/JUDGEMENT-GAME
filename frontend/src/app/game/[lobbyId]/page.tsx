@@ -177,14 +177,26 @@ export default function GamePage() {
     }
   }, [maxBid, bidInput]);
 
+  const maxPlayers = gameState?.max_players || 4;
+
   // Calculate maximum possible cards based on player count (52 cards in a deck)
   const maxPossibleCards =
     gameState && gameState.players.length >= 2
       ? Math.floor(52 / gameState.players.length)
-      : 26;
+      : Math.floor(52 / maxPlayers);
 
   // Generate array [1, 2, ..., maxPossibleCards]
   const cardOptions = Array.from({ length: maxPossibleCards }, (_, i) => i + 1);
+
+  // Clamp cardsPerPlayer if it exceeds maxPossibleCards
+  useEffect(() => {
+    if (cardsPerPlayer > maxPossibleCards) {
+      const timer = setTimeout(() => {
+        setCardsPerPlayer(maxPossibleCards);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [maxPossibleCards, cardsPerPlayer]);
 
   const isHost = gameState?.host_id === userId || !gameState?.host_id;
 
@@ -317,7 +329,9 @@ export default function GamePage() {
               </h2>
               <p className="text-slate-400 text-sm mb-6 font-medium">
                 {gameState
-                  ? `${gameState.players.length} player(s) in room (2 to 4 needed)`
+                  ? `${gameState.players.length} player(s) in room (${
+                      maxPlayers === 2 ? "2 needed" : `2 to ${maxPlayers} needed`
+                    })`
                   : "Connecting to server..."}
               </p>
 
@@ -360,7 +374,7 @@ export default function GamePage() {
               )}
 
               {/* Add Bot Controls (Host only) */}
-              {isHost && gameState && gameState.players.length < 4 && (
+              {isHost && gameState && gameState.players.length < maxPlayers && (
                 <div className="flex justify-center mb-6">
                   <button
                     onClick={handleAddBot}
@@ -412,7 +426,8 @@ export default function GamePage() {
               {isHost ? (
                 <button
                   onClick={handleStartGame}
-                  className="btn bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-base w-full py-3.5 rounded-xl shadow-xl shadow-cyan-500/20 border-none transition-all flex items-center justify-center gap-2"
+                  disabled={!gameState || gameState.players.length < 2 || gameState.players.length > maxPlayers}
+                  className="btn bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-bold text-base w-full py-3.5 rounded-xl shadow-xl shadow-cyan-500/20 border-none transition-all flex items-center justify-center gap-2"
                 >
                   <Play className="w-5 h-5 fill-slate-950" /> Start Game
                 </button>
