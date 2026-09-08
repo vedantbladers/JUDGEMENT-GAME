@@ -50,12 +50,17 @@ export default function LobbyPage() {
   };
 
   const handleJoin = async (code: string) => {
+    const cleanCode = code.trim().toUpperCase();
+    if (cleanCode.length !== 6) {
+      setError("Lobby code must be exactly 6 characters");
+      return;
+    }
     if (submittingRef.current) return;
     submittingRef.current = true;
     setError("");
     try {
-      await joinLobby(code);
-      router.push(`/game/${code}`);
+      await joinLobby(cleanCode);
+      router.push(`/game/${cleanCode}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to join lobby");
       submittingRef.current = false;
@@ -205,7 +210,7 @@ export default function LobbyPage() {
               Enter an existing code to join a match
             </p>
 
-            <div className="w-full mb-6">
+            <div className="w-full mb-4">
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
                 Lobby Code
               </label>
@@ -214,16 +219,31 @@ export default function LobbyPage() {
                 placeholder="E.G. ABCD12"
                 className="input input-bordered w-full bg-slate-900/90 border-slate-700 font-mono uppercase tracking-[0.3em] text-center text-lg text-cyan-300 placeholder:text-slate-600 focus:border-indigo-400"
                 value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && joinCode.trim().length === 6) {
+                    handleJoin(joinCode);
+                  }
+                }}
                 maxLength={6}
               />
+              <div className="flex justify-between items-center mt-1.5 px-1">
+                <span className="text-[10px] text-slate-500">6-character match code</span>
+                <span className={`text-[10px] font-mono transition-colors ${joinCode.length === 6 ? "text-cyan-400 font-bold" : "text-slate-500"}`}>
+                  {joinCode.length}/6
+                </span>
+              </div>
             </div>
 
             <motion.button
               onClick={() => handleJoin(joinCode)}
-              className="btn btn-secondary w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-none text-white shadow-lg shadow-indigo-500/20 font-heading disabled:opacity-50"
-              disabled={joinCode.length < 4}
-              whileTap={{ scale: 0.97 }}
+              className={`btn w-full mt-4 font-heading border-none text-white transition-all duration-300 flex items-center justify-center gap-1.5 ${
+                joinCode.trim().length === 6
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/30 cursor-pointer"
+                  : "bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed opacity-50 shadow-none hover:bg-slate-800"
+              }`}
+              disabled={joinCode.trim().length !== 6}
+              whileTap={joinCode.trim().length === 6 ? { scale: 0.97 } : undefined}
             >
               <LogIn className="w-4 h-4 mr-1.5" /> Join Match
             </motion.button>
