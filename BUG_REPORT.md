@@ -102,8 +102,7 @@
 **Resolution:** 
 - Added `MaxPlayers` to the Go `GameState` struct and Next.js TypeScript interface, propagating room capacity via WebSocket `STATE_UPDATE`.
 - Implemented `getMaxPlayers(lobbyID)` in the WebSocket `Hub` to fetch and cache lobby capacity directly from the database `lobbies` table.
-- Enforced strict capacity bounds in `EventAddBot` using `len(uniqueUsers) + len(activeBots) >= maxPlayers`.
-- Updated the frontend waiting room to dynamically hide "Add AI Bot" once the room reaches configured capacity (`gameState.players.length < maxPlayers`), display adaptive room status prompts (`2 needed` for 2 players, `2 to 3 needed` for 3 players, `2 to 4 needed` for 4 players), and dynamically clamp `cardsPerPlayer` options.
+- Updated the frontend waiting room to dynamically hide "Add AI Bot" once the room reaches configured capacity (`gameState.players.length < maxPlayers`), display adaptive room status prompts (`2 needed` for 2 players, `2 to 3 needed` for 3 players, `2 to 4 needed` for 4 players), dynamically default `cardsPerPlayer` to the mathematical maximum (26 for 2 players, 17 for 3 players, 13 for 4 players) while still allowing hosts to manually pick custom card counts, and added server-side fallbacks in `hub.go`.
 
 ## 13. Plaintext 401 & Unhandled Token Expiry SyntaxError (API & Auth Resilience)
 **Symptom:** When attempting to create or join a lobby after leaving the application idle or following a server restart, the UI threw an unhandled crash error: `Unexpected token 'I', "Invalid or"... is not valid JSON`.
