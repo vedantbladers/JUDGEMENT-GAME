@@ -37,5 +37,6 @@ jobs:
     - name: Build Next.js App
       run: npm run build
       env:
-        NEXT_PUBLIC_API_URL: https://judgement-game-30op.onrender.com/api/v1
-        NEXT_PUBLIC_WS_URL: wss://judgement-game-30op.onrender.com/api/v1/lobbies
+        NEXT_PUBLIC_API_URL: https://judgement-api-vedant.centralindia.cloudapp.azure.com/api/v1
+        NEXT_PUBLIC_WS_URL: wss://judgement-api-vedant.centralindia.cloudapp.azure.com/api/v1/lobbies
+

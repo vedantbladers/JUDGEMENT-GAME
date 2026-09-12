@@ -5,20 +5,21 @@
 ---
 
 ## 1. The CORS & Hardcoded Environment Bug
-**Symptom:** When deploying the Next.js frontend to Vercel and the Go backend to Render, the browser threw a `Failed to fetch` error during login and registration.
+**Symptom:** When deploying the Next.js frontend to Vercel and the Go backend to remote cloud production, the browser threw a `Failed to fetch` error during login and registration.
 **Root Cause:** 
 - The frontend was hardcoded to send requests to `http://localhost:8080`, which obviously failed on the live Vercel site. 
 - The Go backend's CORS (Cross-Origin Resource Sharing) middleware was strictly allowing `localhost`, blocking the Vercel domain from making requests.
 **Resolution:** 
 - Configured the frontend to use `process.env.NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL`.
-- Modified the Go backend to accept a `FRONTEND_URL` environment variable and injected it into the Gin CORS middleware `AllowedOrigins`.
+- Modified the Go backend to accept a `FRONTEND_URL` environment variable and injected it into the CORS middleware `AllowedOrigins`.
 
-## 2. The Render "Cold Start" Spin-down Issue (DevOps)
-**Symptom:** After leaving the game idle for 15+ minutes, the next time a user tried to log in, the API request would hang for 50+ seconds before responding.
-**Root Cause:** Render's free tier automatically spins down web services after 15 minutes of inactivity to save resources, causing massive "cold start" delays when waking back up.
+## 2. Eliminating Cold Starts via Dedicated Cloud Architecture (DevOps)
+**Symptom:** On shared serverless / free-tier PaaS environments, after leaving the application idle for 15+ minutes, API and WebSocket requests would hang for 50+ seconds due to container spin-down.
+**Root Cause:** Ephemeral free-tier platforms de-provision idle compute instances to conserve shared host resources, causing severe cold-start latencies and dropped WebSocket connections.
 **Resolution:** 
-- Engineered a lightweight `/health` endpoint in the Go backend that returned a `200 OK` status.
-- Set up a scheduled cron job (via `cron-job.org`) to ping the `/health` endpoint every 10 minutes. This successfully tricked the Render service into staying awake 24/7, eliminating cold starts entirely.
+- Engineered a lightweight `/health` endpoint in the Go backend that returns HTTP 200 OK along with real-time PostgreSQL database connectivity status.
+- Migrated the production backend to a dedicated Azure Linux VM (`B2ats_v2`) running Docker and an Nginx reverse proxy with automated Let's Encrypt SSL renewal.
+- The dedicated VM architecture runs 24/7 without idle spin-downs, guaranteeing zero cold-start latency and continuous WebSocket connection health for live multiplayer sessions.
 
 ## 3. The Cumulative Scoring / State Overwrite Bug (WebSocket/Game Logic)
 **Symptom:** After a round of cards finished, clicking "Play Next Round" caused all player scores to reset to zero instead of keeping a running total.
