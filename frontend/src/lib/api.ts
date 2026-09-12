@@ -20,7 +20,7 @@ async function apiFetch<T>(
     headers,
   });
 
-  let data: any = null;
+  let data: (Record<string, unknown> & { error?: { message?: string } }) | null = null;
   const contentType = res.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
     try {

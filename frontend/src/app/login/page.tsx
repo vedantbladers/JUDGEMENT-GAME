@@ -116,7 +116,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="btn btn-primary w-full mt-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 border-none text-white shadow-lg shadow-cyan-500/20 font-heading"
+              className="btn btn-primary w-full mt-6 bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 border-none text-white shadow-lg shadow-cyan-500/20 font-heading"
               disabled={loading}
             >
               {loading ? (
