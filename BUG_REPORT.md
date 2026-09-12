@@ -151,12 +151,3 @@
 - Added server-side enforcement in `backend/internal/ws/hub.go` ensuring that if `g.Phase == "finished"` and `g.CardsPerPlayer > 1`, `cardsToDeal` is guaranteed to decrement to `g.CardsPerPlayer - 1`.
 
 ---
-
-### 💡 Interview Tips:
-- **For Backend & Concurrency:** Talk about **Bug #8 (The Channel Double-Close Panic)**. Explaining how `sync.Once` prevents race condition crashes across concurrent goroutines (`readPump`, `writePump`, and `hub.broadcast`) demonstrates real-world Go systems mastery.
-- **For Security & Architecture:** Talk about **Bug #7 (CSWSH & Origin Validation)** and **Bug #9 (Memory Exhaustion DoS)**. Discussing why WebSockets require strict origin checks and how `http.MaxBytesReader` prevents memory exhaustion shows deep production readiness.
-- **For Game & Product Engineering:** Discuss **Challenge #10 (Heuristic Bot AI)**. Explaining why a deterministic, rule-bound heuristic state engine was chosen over latency-heavy LLMs shows practical product thinking and algorithmic discipline.
-- **For Real-Time State Synchronization & Distributed Validation:** Talk about **Bug #12 (Lobby Capacity & Dynamic Bot Enforcement)**. Discussing why database persistence models (`MaxPlayers` on `Lobby`) must be coupled with in-memory WebSocket event handlers and broadcast state structs ensures multi-tiered boundary enforcement across both server and client.
-- **For API Design & Error Contracts:** Talk about **Bug #13 (Plaintext 401 & Strict Error Contracts)**. Discussing why middleware layers must strictly adhere to the API's JSON response contract—and how defensive fetch wrappers handle non-JSON edge cases and lifecycle invalidation—shows attention to operational stability and clean UX.
-- **For Frontend Craft & Modern CSS:** Talk about **Bug #14 (Font Descender Clipping & Sticky Contexts)**. Explaining how `-webkit-background-clip: text` clips font descenders when lacking baseline padding, and how parent `overflow: hidden` breaks CSS `position: sticky`, highlights an eye for visual polish and deep layout engine understanding.
-- **For Form Usability & State Integrity:** Talk about **Bug #15 (Premature Activation & Visual Affordance)**. Discussing why actionable UI buttons must strictly sync visual affordances (glows, gradients, shadows) with domain validation constraints (exact 6-character lobby codes) prevents erroneous submissions and communicates clear system state.
