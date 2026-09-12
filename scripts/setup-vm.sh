@@ -6,9 +6,11 @@ set -e
 # Run this script once on your fresh Ubuntu 22.04 / 24.04 Azure Linux VM
 # ==============================================================================
 
+export DEBIAN_FRONTEND=noninteractive
+
 echo ">>> [1/6] Updating system packages..."
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y ca-certificates curl gnupg lsb-release ufw
+sudo -E apt update && sudo -E apt upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
+sudo -E apt install -y ca-certificates curl gnupg lsb-release ufw
 
 echo ">>> [2/6] Configuring 2GB Swap Memory (prevents OOM on B1s 1GB RAM)..."
 if [ ! -f /swapfile ]; then
@@ -33,15 +35,15 @@ echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo -E apt update
+sudo -E apt install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Grant current user docker group access
 sudo usermod -aG docker "$USER"
 echo "Docker installed successfully."
 
 echo ">>> [4/6] Installing Nginx and Certbot for SSL..."
-sudo apt install -y nginx certbot python3-certbot-nginx
+sudo -E apt install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nginx certbot python3-certbot-nginx
 
 echo ">>> [5/6] Creating Nginx Reverse Proxy Configuration..."
 DOMAIN_NAME=${1:-"_"}
