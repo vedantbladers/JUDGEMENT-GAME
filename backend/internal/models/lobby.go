@@ -26,6 +26,6 @@ type CreateLobbyRequest struct {
 
 // LobbyResponse represents the payload returned after creating/joining a lobby
 type LobbyResponse struct {
-	Lobby   Lobby  `json:"lobby"`
-	Players []User `json:"players"`
+	Lobby   Lobby        `json:"lobby"`
+	Players []PublicUser `json:"players"`
 }

@@ -77,20 +77,32 @@ func (h *Handler) serveWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Get Username from query param
-	username := r.URL.Query().Get("username")
+	// 3. Get verified Username from the JWT context (prevents display name spoofing)
+	username, _ := r.Context().Value(middleware.ContextUsernameKey).(string)
 	if username == "" {
 		username = "Player"
 	}
 
-	// 4. Upgrade the HTTP connection to a WebSocket connection
+	// 4. Verify user has actually joined this lobby (prevents unauthorized access)
+	if h.Hub.db != nil {
+		var count int64
+		err := h.Hub.db.Table("lobby_players").
+			Where("lobby_id = ? AND user_id = ?", lobbyID, userID).
+			Count(&count).Error
+		if err != nil || count == 0 {
+			http.Error(w, "Forbidden: you have not joined this lobby", http.StatusForbidden)
+			return
+		}
+	}
+
+	// 5. Upgrade the HTTP connection to a WebSocket connection
 	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("WebSocket upgrade failed:", err)
 		return
 	}
 
-	// 5. Create the client
+	// 6. Create the client
 	client := &Client{
 		Hub:      h.Hub,
 		Conn:     conn,
@@ -100,10 +112,10 @@ func (h *Handler) serveWs(w http.ResponseWriter, r *http.Request) {
 		LobbyID:  lobbyID,
 	}
 	
-	// 5. Register the client with the hub
+	// 7. Register the client with the hub
 	client.Hub.Register <- client
 
-	// 6. Allow collection of memory referenced by the caller by doing all work in new goroutines.
+	// 8. Allow collection of memory referenced by the caller by doing all work in new goroutines.
 	go client.writePump()
 	go client.readPump()
 }

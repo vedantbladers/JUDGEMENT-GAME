@@ -14,6 +14,16 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"`
 }
 
+// PublicUser represents safe public profile information that can be shared with other players
+type PublicUser struct {
+	ID        int       `json:"id"`
+	Username  string    `json:"username"`
+	Wins      int       `json:"wins"`
+	Losses    int       `json:"losses"`
+	IsGuest   bool      `json:"is_guest"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+}
+
 // RegisterRequest represents the payload for user registration
 type RegisterRequest struct {
 	Username string `json:"username"`

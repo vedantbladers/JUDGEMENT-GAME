@@ -1,14 +1,10 @@
 package game
 
 import (
+	crand "crypto/rand"
 	"errors"
-	"math/rand"
-	"time"
+	"math/big"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 // NewDeck generates a fresh, unshuffled 52-card deck
 func NewDeck() []Card {
@@ -25,10 +21,14 @@ func NewDeck() []Card {
 	return deck
 }
 
-// Shuffle randomizes the order of cards in a deck (Fisher-Yates algorithm)
+// Shuffle randomizes the order of cards in a deck using cryptographically secure randomness (Fisher-Yates algorithm)
 func Shuffle(deck []Card) {
 	for i := len(deck) - 1; i > 0; i-- {
-		j := rand.Intn(i + 1)
+		n, err := crand.Int(crand.Reader, big.NewInt(int64(i+1)))
+		if err != nil {
+			continue
+		}
+		j := int(n.Int64())
 		deck[i], deck[j] = deck[j], deck[i]
 	}
 }

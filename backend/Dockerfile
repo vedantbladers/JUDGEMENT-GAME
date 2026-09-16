@@ -25,8 +25,14 @@ WORKDIR /app
 # tzdata ensures accurate timestamps
 RUN apk add --no-cache ca-certificates tzdata
 
+# Create an unprivileged system user
+RUN adduser -D -u 10001 -g '' appuser
+
 # Copy the compiled binary from builder
 COPY --from=builder /app/server /app/server
+
+# Use unprivileged user
+USER appuser
 
 # Expose backend API port
 EXPOSE 8080

@@ -110,7 +110,9 @@ interface LobbyResponse {
   players: {
     id: number;
     username: string;
-    email: string;
+    wins?: number;
+    losses?: number;
+    is_guest?: boolean;
   }[];
 }
 

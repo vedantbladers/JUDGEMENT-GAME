@@ -83,8 +83,15 @@ func (h *Hub) Run() {
 		case client := <-h.Register:
 			if h.Lobbies[client.LobbyID] == nil {
 				h.Lobbies[client.LobbyID] = make(map[*Client]bool)
-				// The first person to join the lobby becomes the host
-				h.LobbyHosts[client.LobbyID] = client.UserID
+				// Resolve authentic host from database (fallback to client.UserID if db is unavailable)
+				hostID := client.UserID
+				if h.db != nil {
+					var lob models.Lobby
+					if err := h.db.Select("host_id").Where("id = ?", client.LobbyID).First(&lob).Error; err == nil && lob.HostID != 0 {
+						hostID = lob.HostID
+					}
+				}
+				h.LobbyHosts[client.LobbyID] = hostID
 				h.getMaxPlayers(client.LobbyID)
 			}
 			h.Lobbies[client.LobbyID][client] = true
