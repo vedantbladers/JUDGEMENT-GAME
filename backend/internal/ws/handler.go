@@ -28,6 +28,7 @@ func isAllowedOrigin(origin string, frontendURL string) bool {
 		"http://localhost:8080",
 		"http://127.0.0.1:8080",
 		"http://localhost:5173",
+		"https://judgement-game-gamma.vercel.app",
 	}
 	if frontendURL != "" {
 		allowed = append(allowed, strings.TrimRight(frontendURL, "/"))
@@ -37,6 +38,10 @@ func isAllowedOrigin(origin string, frontendURL string) bool {
 		if strings.EqualFold(originTrimmed, a) {
 			return true
 		}
+	}
+	// Allow any Vercel deployment for this project
+	if strings.HasSuffix(originTrimmed, ".vercel.app") {
+		return true
 	}
 	return false
 }

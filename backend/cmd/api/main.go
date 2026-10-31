@@ -37,7 +37,11 @@ func main() {
 	r := chi.NewRouter()
 
 	// 4. Register global middleware
-	allowedOrigins := []string{"http://localhost:3000", "http://127.0.0.1:3000"}
+	allowedOrigins := []string{
+		"http://localhost:3000",
+		"http://127.0.0.1:3000",
+		"https://judgement-game-gamma.vercel.app",
+	}
 	if cfg.FrontendUrl != "" && cfg.FrontendUrl != "http://localhost:3000" {
 		allowedOrigins = append(allowedOrigins, cfg.FrontendUrl)
 	}
