@@ -21,7 +21,7 @@ FROM alpine:3.20
 
 WORKDIR /app
 
-# ca-certificates is required for SSL database connections (Azure PostgreSQL Flexible Server)
+# ca-certificates is required for SSL database connections (AWS RDS / PostgreSQL SSL)
 # tzdata ensures accurate timestamps
 RUN apk add --no-cache ca-certificates tzdata
 
