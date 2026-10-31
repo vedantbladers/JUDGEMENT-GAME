@@ -95,6 +95,7 @@ func (h *Handler) serveWs(w http.ResponseWriter, r *http.Request) {
 			Where("lobby_id = ? AND user_id = ?", lobbyID, userID).
 			Count(&count).Error
 		if err != nil || count == 0 {
+			log.Printf("[WS-AUTH] Rejected user %d (%s) for lobby %s: not in lobby_players (count=%d, err=%v)", userID, username, lobbyID, count, err)
 			http.Error(w, "Forbidden: you have not joined this lobby", http.StatusForbidden)
 			return
 		}
@@ -103,9 +104,10 @@ func (h *Handler) serveWs(w http.ResponseWriter, r *http.Request) {
 	// 5. Upgrade the HTTP connection to a WebSocket connection
 	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("WebSocket upgrade failed:", err)
+		log.Printf("[WS-UPGRADE] WebSocket upgrade failed for user %s (%d) in lobby %s: %v", username, userID, lobbyID, err)
 		return
 	}
+	log.Printf("[WS-UPGRADE] Successfully upgraded user %s (%d) to WebSocket in lobby %s", username, userID, lobbyID)
 
 	// 6. Create the client
 	client := &Client{

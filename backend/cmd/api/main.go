@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -57,7 +56,8 @@ func main() {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 	r.Use(middleware.RequestID)
-	r.Use(middleware.Timeout(60 * time.Second))
+	// Note: Do NOT use middleware.Timeout globally because timeoutWriter strips
+	// the http.Hijacker interface, which breaks WebSocket upgrades.
 
 	// 5. Initialize Services and Handlers
 	authRepo := auth.NewRepository(db)
