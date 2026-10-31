@@ -74,24 +74,33 @@ jobs:
       - name: SSH to EC2 and Update Container
         uses: appleboy/ssh-action@v1.0.3
         env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/judgement-backend:latest
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         with:
           host: ${{ secrets.AWS_EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
-          envs: ECR_IMAGE
+          envs: ECR_REGISTRY,ECR_IMAGE,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
           script: |
-            # 1. Log in Docker to AWS ECR
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+            set -e
 
-            # 2. Pull the latest image
+            # 1. Export AWS credentials so EC2 can talk to ECR
+            export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=$AWS_REGION
+
+            # 2. Log in Docker to AWS ECR
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            # 3. Pull the latest image
             docker pull $ECR_IMAGE
 
-            # 3. Stop and remove the existing container (if running)
+            # 4. Stop and remove the existing container (if running)
             docker stop judgement-backend || true
             docker rm judgement-backend || true
 
-            # 4. Run the updated container bound to 127.0.0.1:8080
+            # 5. Run the updated container bound to 127.0.0.1:8080
             docker run -d \
               --name judgement-backend \
               --restart unless-stopped \
@@ -102,5 +111,5 @@ jobs:
               -e FRONTEND_URL="${{ secrets.FRONTEND_URL }}" \
               $ECR_IMAGE
 
-            # 5. Clean up dangling images to save disk space
+            # 6. Clean up dangling images to save disk space
             docker image prune -af --filter "until=48h"
