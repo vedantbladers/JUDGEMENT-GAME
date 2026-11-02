@@ -137,6 +137,35 @@ flowchart TB
     Router -->|GORM Connection Pool| PG
 ```
 
+#### 🔍 Architectural Component Breakdown & Terminology
+
+> [!NOTE]
+> **Use this breakdown to explain system boundaries, request routing, and infrastructure layers to interviewers.**
+
+* **Clients Layer**:
+  - `Player 1 (Host) / Player 2`: Human users interacting through desktop or mobile browsers.
+  - `AI Bot (Atlas, Nova, Sage)`: In-memory autonomous sparring bots that simulate human players. They bypass network serialization and push moves directly into Go channels, eliminating network latency.
+* **Frontend Edge (Hosted on Vercel CDN)**:
+  - `Next.js 16 (React 19)`: Handles server-side rendering (SSR) for fast first contentful paint and link previews. Provides the reactive game table using Tailwind CSS v4 and Framer Motion 13 for fluid card physics.
+  - `APIClient (Fetch)`: Stateless HTTP client handling authentication (register, login, guest sessions) and lobby matchmaking CRUD operations.
+  - `WSClient (WebSocket Manager)`: Stateful client managing a persistent full-duplex TCP socket, handling heartbeats, room joins, card plays, and real-time state updates.
+* **AWS EC2 Host (`t3.micro`, Ubuntu 24.04 LTS)**:
+  - Dedicated virtual machine in AWS Sydney (`ap-southeast-2`), bound to a permanent static **AWS Elastic IP (`52.63.191.114`)** so server reboots never break DNS records. Provides 24/7 continuous uptime with zero serverless cold-start latency.
+  - `Nginx Reverse Proxy & TLS`: Listens on public ports 80 (HTTP) and 443 (HTTPS/WSS). Terminates SSL/TLS via Let's Encrypt certificates (auto-renewed via Certbot). Transparently upgrades HTTP/1.1 requests to persistent WebSockets (`Connection: Upgrade`, `Upgrade: websocket`) and proxies them to the internal Go container on port 8080 with a 3600-second timeout buffer. Protects the Go application from Slowloris attacks by buffering slow client connections.
+* **Docker Container (`judgement-backend`)**:
+  - Multi-stage compiled Go binary packaged inside a minimal Alpine Linux container (~25MB total image size, ~35MB RAM footprint). Runs under an unprivileged user (`appuser`, UID 10001) for defense-in-depth container security.
+  - `Chi HTTP Router (/api/v1)`: Lightweight idiomatic router handling stateless REST endpoints (`/api/v1/auth`, `/api/v1/lobbies`). Features CORS allowlist middleware, request body size limits (1MB via `http.MaxBytesReader`), and logging.
+  - `Gorilla WebSocket Upgrader`: Evaluates incoming WebSocket connection requests (`GET /api/v1/lobbies/{id}/ws`). Validates the `Origin` header against an approved domain whitelist to prevent Cross-Site WebSocket Hijacking (CSWSH), validates the player's JWT, and hijacks the raw TCP socket.
+  - `Central Hub`: The core singleton multiplexer. Tracks all active rooms (`Lobbies` map) and games (`Games` map). Processes incoming player actions sequentially through an unbuffered Go channel.
+  - `Pure Domain Engine (internal/game)`: 100% network-agnostic core domain logic. Implements card structs, Fisher-Yates deck shuffling, suit-following rules, dealer bidding constraints, trick resolution, and AI heuristics.
+  - `State Sanitizer`: Zero-trust security filter that clones the game state and wipes opponents' hidden cards before network serialization.
+* **AWS RDS Managed Database (`db.t4g.micro`)**:
+  - PostgreSQL 16 engine running in a private VPC subnet with **Public Access Disabled** (no public IP).
+  - **Security Group Referencing (`rds-judgement-sg`)**: Inbound port 5432 is strictly restricted to traffic originating from the EC2 instance's security group (`ec2-judgement-sg`).
+  - Stores relational entities: `users` (bcrypt passwords, win/loss stats), `lobbies` (room codes, capacity), and `lobby_players`. Connected via GORM with automatic connection pooling (`database/sql`).
+
+---
+
 ### Concurrency Flow: Goroutine Fan-In / Fan-Out
 
 ```mermaid
@@ -159,6 +188,37 @@ sequenceDiagram
     Hub->>WP: Fan-Out sanitized state to room players
     WP->>Player: Send JSON frame: STATE_UPDATE
 ```
+
+#### ⚡ Concurrency Concepts & Terminology Explained
+
+> [!IMPORTANT]
+> **This concurrency model is the centerpiece of the backend system design. Be ready to explain these exact terms:**
+
+* **1. Client `readPump()` Goroutines (Isolated Network Readers)**:
+  - *What it is*: For every player that connects via WebSocket, the server spawns a dedicated, permanent lightweight goroutine (~2KB memory).
+  - *What it does*: It runs a continuous `for` loop blocking on `conn.ReadMessage()`. When the player plays a card, `readPump()` receives the raw bytes, parses the JSON action into an `ActionMessage` struct, and pushes it into the central channel.
+  - *Why it matters*: By isolating network reading in its own goroutine, network transmission jitter from one player never affects any other player or blocks the server.
+* **2. The Fan-In Pattern (Multiplexing)**:
+  - *What it is*: A classic Go concurrency pattern where multiple concurrent producers (`readPump` goroutines from 4 different players) all write into a single, shared channel (`Hub.Actions`).
+  - *Why it matters*: It funnel-serializes asynchronous network inputs from distributed web browsers into a single orderly queue without requiring complex thread synchronization.
+* **3. Single-Threaded Central Hub Event Loop (Lock-Free Concurrency)**:
+  - *What it is*: The Central Hub runs a single, dedicated goroutine executing a continuous `select` loop that pulls one action at a time from `Hub.Actions`.
+  - *Why it matters*: **Eliminates Race Conditions Without Mutexes!** If two players click a card at the exact same microsecond, the Go channel runtime deterministically serializes them. Because only one goroutine ever reads or mutates the active `GameState` struct in server memory, data races, deadlocks, and lock contention are mathematically impossible.
+* **4. Pure Domain Engine Validation**:
+  - *What it is*: The `internal/game` package is completely isolated from HTTP, WebSockets, or SQL (Hexagonal / Clean Architecture).
+  - *What it does*: When the Hub passes an action to the engine, it validates game rules in pure Go memory: *Is it this player's turn? Do they hold this card? Are they following the lead suit if they have it?* If valid, it updates trick state, evaluates trick winners on the 4th card, and updates scores.
+* **5. Zero-Trust State Sanitization (Anti-Cheat Scrubbing)**:
+  - *What it is*: A data scrubbing layer that creates a personalized, cloned view of `GameState` for each connected player.
+  - *Why it matters*: If a naive server broadcasts the raw global game state, a tech-savvy player can open Chrome DevTools $\rightarrow$ Network $\rightarrow$ WS frames and inspect all opponents' private cards. Our Sanitizer explicitly zeroes out opponents' hands (`opponents[i].Hand = nil`), sending only public cards on the table and card counts. Opponents' hidden cards physically do not exist in the outbound network packet.
+* **6. The Fan-Out Pattern (Broadcasting)**:
+  - *What it is*: The reverse of Fan-In. The Central Hub iterates over all connected players in that specific lobby and pushes their sanitized JSON state into their individual outbound channels (`client.Send`).
+* **7. Client `writePump()` Goroutines (Buffered Network Writers)**:
+  - *What it is*: A dedicated goroutine per connected player that acts as an outbound buffer.
+  - *What it does*: It consumes messages from the buffered `client.Send` channel (capacity 256) and writes them down the TCP socket to the browser. It also manages WebSocket ping/pong heartbeat tickers to detect dead clients.
+  - *Why it matters*: Outgoing socket writes are decoupled from the Hub. If one player has high packet loss or an unstable connection, their buffered channel absorbs the delay without stalling the central game loop for the rest of the table.
+* **8. `client.CloseSend()` with `sync.Once` (Graceful Channel Teardown)**:
+  - *What it is*: In Go, attempting to close an already closed channel causes an immediate fatal crash: `panic: close of closed channel`.
+  - *Why it matters*: Under rapid Wi-Fi drops, both a socket read error in `readPump()` and a failed write in `writePump()` can attempt to unregister the client simultaneously. Wrapping channel teardown in Go's `sync.Once` guarantees `close(c.Send)` is executed exactly once, completely preventing race condition panics.
 
 ---
 
